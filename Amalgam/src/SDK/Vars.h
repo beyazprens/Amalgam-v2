@@ -307,6 +307,7 @@ NAMESPACE_BEGIN(Vars)
 			CVar(SmoothCurveAmount, "Smooth curve amount", 100.f, SLIDER_CLAMP | SLIDER_PRECISION, 0.f, 200.f, 5.f, "%g%%");
 			CVar(TickTolerance, "Tick tolerance", 4, SLIDER_CLAMP, 0, 21);
 			CVar(AutoShoot, "Auto shoot", true);
+			CVar(ReactionTime, "Reaction time", 0.f, SLIDER_CLAMP | SLIDER_PRECISION, 0.f, 500.f, 10.f, "%gms");
 			CVar(FOVCircle, "FOV Circle", true, VISUAL);
 			CVar(NoSpread, "No spread", false);
 			CVar(PrioritizeNavbot, "Prioritize navbot target", false);

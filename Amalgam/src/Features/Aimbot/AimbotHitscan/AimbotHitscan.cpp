@@ -567,6 +567,9 @@ bool CAimbotHitscan::ShouldFire(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUser
 	if (!Vars::Aimbot::General::AutoShoot.Value)
 		return false;
 
+	if (Vars::Aimbot::General::ReactionTime.Value > 0.f && I::GlobalVars->curtime < m_flReactionEnd)
+		return false;
+
 	if (Vars::Aimbot::Hitscan::Modifiers.Value & Vars::Aimbot::Hitscan::ModifiersEnum::WaitForHeadshot
 		&& tTarget.m_pEntity->IsPlayer())
 	{
@@ -797,7 +800,10 @@ void CAimbotHitscan::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pC
 
 	auto vTargets = F::AimbotGlobal.ManageTargets(GetTargets, pLocal, pWeapon);
 	if (vTargets.empty())
+	{
+		m_iReactionEnt = 0;
 		return;
+	}
 
 	switch (nWeaponID)
 	{
@@ -845,6 +851,13 @@ void CAimbotHitscan::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pC
 
 		G::AimTarget = { tTarget.m_pEntity->entindex(), I::GlobalVars->tickcount };
 		G::AimPoint = { tTarget.m_vPos, I::GlobalVars->tickcount };
+
+		const int iTargetEnt = tTarget.m_pEntity->entindex();
+		if (m_iReactionEnt != iTargetEnt)
+		{
+			m_iReactionEnt = iTargetEnt;
+			m_flReactionEnd = I::GlobalVars->curtime + Vars::Aimbot::General::ReactionTime.Value / 1000.f;
+		}
 
 		if (ShouldFire(pLocal, pWeapon, pCmd, tTarget))
 		{

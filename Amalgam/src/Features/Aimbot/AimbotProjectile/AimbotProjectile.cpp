@@ -1816,7 +1816,10 @@ bool CAimbotProjectile::RunMain(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUser
 
 	auto vTargets = F::AimbotGlobal.ManageTargets(GetTargets, pLocal, pWeapon);
 	if (vTargets.empty())
+	{
+		m_iReactionEnt = 0;
 		return false;
+	}
 
 	if (!G::AimTarget.m_iEntIndex)
 		G::AimTarget = { vTargets.front().m_pEntity->entindex(), I::GlobalVars->tickcount, 0 };
@@ -1867,7 +1870,16 @@ bool CAimbotProjectile::RunMain(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUser
 		G::AimTarget = { tTarget.m_pEntity->entindex(), I::GlobalVars->tickcount };
 		G::AimPoint = { tTarget.m_vPos, I::GlobalVars->tickcount };
 
-		if (Vars::Aimbot::General::AutoShoot.Value)
+		const int iTargetEnt = tTarget.m_pEntity->entindex();
+		if (m_iReactionEnt != iTargetEnt)
+		{
+			m_iReactionEnt = iTargetEnt;
+			m_flReactionEnd = I::GlobalVars->curtime + Vars::Aimbot::General::ReactionTime.Value / 1000.f;
+		}
+
+		const bool bReactionReady = Vars::Aimbot::General::ReactionTime.Value <= 0.f || I::GlobalVars->curtime >= m_flReactionEnd;
+
+		if (Vars::Aimbot::General::AutoShoot.Value && bReactionReady)
 		{
 			switch (m_iWeaponID)
 			{

@@ -95,6 +95,9 @@ private:
 
 	bool m_bLastTickHeld = false;
 
+	int m_iReactionEnt = 0;
+	float m_flReactionEnd = 0.f;
+
 	float m_flTimeTo = std::numeric_limits<float>::max();
 	std::vector<Vec3> m_vPlayerPath = {};
 	std::vector<Vec3> m_vProjectilePath = {};
