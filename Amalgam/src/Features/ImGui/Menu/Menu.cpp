@@ -309,23 +309,35 @@ void CMenu::MenuAimbot(int iTab)
 				if (Section("General"))
 				{
 					FDropdown(Vars::Aimbot::General::AimType, FDropdownEnum::Left);
+					FTooltip("Aiming mode: Off, Legit (smooth/humanlike) or Rage (fast/snappy).");
 					FDropdown(Vars::Aimbot::General::TargetSelection, FDropdownEnum::Right);
+					FTooltip("How the best target is chosen among valid ones (e.g. closest, lowest HP).");
 					FDropdown(Vars::Aimbot::General::Target, FDropdownEnum::Left);
+					FTooltip("Entity types the aimbot will target (players, buildings, etc.).");
 					FDropdown(Vars::Aimbot::General::Ignore, FDropdownEnum::Right);
+					FTooltip("Conditions under which targets are skipped (invisible, unsimulated, etc.).");
 					FDropdown(Vars::Aimbot::General::SmoothCurve, FDropdownEnum::Left);
+					FTooltip("Movement curve applied when smoothing the aim towards a target.");
 					FDropdown(Vars::Aimbot::General::BypassIgnore, FDropdownEnum::Right);
+					FTooltip("While a bind is held, these ignore rules are bypassed.");
 					FSlider(Vars::Aimbot::General::AimFOV, FSliderEnum::Left);
+					FTooltip("Max angle (degrees) from the crosshair within which targets are considered.");
 					FSlider(Vars::Aimbot::General::MaxTargets, FSliderEnum::Right);
+					FTooltip("Maximum number of simultaneous targets the aimbot can aim at.");
 					FSlider(Vars::Aimbot::General::SmoothCurveAmount, FSliderEnum::Left);
+					FTooltip("Strength of the smooth curve applied to aim movement.");
 					FSlider(Vars::Aimbot::General::AssistStrength, FSliderEnum::Right);
+					FTooltip("How strongly the aim snaps to the target. Use in Legit mode.");
 					PushTransparent(!(Vars::Aimbot::General::Ignore.Value & Vars::Aimbot::General::IgnoreEnum::Invisible));
 					{
 						FSlider(Vars::Aimbot::General::IgnoreInvisible, FSliderEnum::Left);
+						FTooltip("Ignore targets that have been invisible for at least this % of the time.");
 					}
 					PopTransparent();
 					PushTransparent(!(Vars::Aimbot::General::Ignore.Value & Vars::Aimbot::General::IgnoreEnum::Unsimulated));
 					{
 						FSlider(Vars::Aimbot::General::TickTolerance, FSliderEnum::Right);
+						FTooltip("Extra ticks of lag tolerance when verifying unsimulated targets.");
 					}
 					PopTransparent();
 					PushTransparent(!Vars::Aimbot::General::FOVCircle.Value);
@@ -334,21 +346,29 @@ void CMenu::MenuAimbot(int iTab)
 					}
 					PopTransparent();
 					FToggle(Vars::Aimbot::General::AutoShoot, FToggleEnum::Left);
+					FTooltip("Automatically fire when the aimbot is locked onto a valid target.");
 					FToggle(Vars::Aimbot::General::FOVCircle, FToggleEnum::Right);
+					FTooltip("Draw a circle on screen showing the aimbot's current FOV range.");
 					FToggle(Vars::Aimbot::General::PrioritizeNavbot, FToggleEnum::Left);
+					FTooltip("Prefer the navbot's current navigation target over other targets.");
 					FToggle(Vars::Aimbot::General::PrioritizeFollowbot, FToggleEnum::Right);
+					FTooltip("Prefer the followbot's current follow target over other targets.");
 
 					Divider();
 					FText("Crithack");
 					Divider();
 					FToggle(Vars::CritHack::ForceCrits);
+					FTooltip("Force critical hits using crit bucket manipulation.");
 					FToggle(Vars::CritHack::AvoidRandomCrits, FToggleEnum::Left);
+					FTooltip("Prevent random crits from triggering to preserve the crit bucket.");
 					FToggle(Vars::CritHack::AlwaysMeleeCrit, FToggleEnum::Right);
+					FTooltip("Always deliver critical hits with melee weapons.");
 
 					Divider();
 					FText("Misc");
 					Divider();
 					FToggle(Vars::Aimbot::General::NoSpread);
+					FTooltip("Remove weapon spread so bullets land exactly where you aim.");
 				} EndSection();
 				if (Vars::Debug::Options.Value)
 				{
@@ -364,12 +384,17 @@ void CMenu::MenuAimbot(int iTab)
 				if (Section("Hitscan", 8))
 				{
 					FDropdown(Vars::Aimbot::Hitscan::Hitboxes, FDropdownEnum::Left);
+					FTooltip("Which hitboxes to target with hitscan weapons (head, body, etc.).");
 					FDropdown(Vars::Aimbot::Hitscan::MultipointHitboxes, FDropdownEnum::Right);
+					FTooltip("Hitboxes that use multipoint scanning for higher hit probability.");
 					FSlider(Vars::Aimbot::Hitscan::MultipointScale);
+					FTooltip("Size of multipoint scan points relative to the hitbox size.");
 					FDropdown(Vars::Aimbot::Hitscan::Modifiers);
+					FTooltip("Special aimbot behaviors for hitscan (e.g. tapfire at range).");
 					PushTransparent(!(Vars::Aimbot::Hitscan::Modifiers.Value & Vars::Aimbot::Hitscan::ModifiersEnum::Tapfire));
 					{
 						FSlider(Vars::Aimbot::Hitscan::TapfireDistance);
+						FTooltip("Max distance at which tapfire is applied. Use with Tapfire modifier.");
 					}
 					PopTransparent();
 				} EndSection();
@@ -386,25 +411,37 @@ void CMenu::MenuAimbot(int iTab)
 				if (Section("Projectile", 8))
 				{
 					FDropdown(Vars::Aimbot::Projectile::StrafePrediction, FDropdownEnum::Left);
+					FTooltip("Predict enemy strafing to better lead projectile aim.");
 					FDropdown(Vars::Aimbot::Projectile::SplashPrediction, FDropdownEnum::Right);
+					FTooltip("Method of predicting splash damage for area-effect weapons.");
 					FDropdown(Vars::Aimbot::Projectile::Hitboxes, FDropdownEnum::Left);
+					FTooltip("Which hitboxes to target with projectile weapons.");
 					FDropdown(Vars::Aimbot::Projectile::Modifiers, FDropdownEnum::Right);
+					FTooltip("Special behaviors for projectile aim (e.g. auto-release, splash).");
 					FSlider(Vars::Aimbot::Projectile::MaxSimulationTime, FSliderEnum::Left);
+					FTooltip("Max time (s) to simulate the projectile trajectory.");
 					PushTransparent(!Vars::Aimbot::Projectile::StrafePrediction.Value);
 					{
 						FSlider(Vars::Aimbot::Projectile::HitChance, FSliderEnum::Right);
+						FTooltip("Min predicted hit probability (%) required before firing. Use with Strafe prediction.");
 					}
 					PopTransparent();
 					FDropdown(Vars::Aimbot::Projectile::AutoDetonate, FDropdownEnum::Left);
+					FTooltip("Auto-detonate stickies/mines when enemies are within the blast radius.");
 					FDropdown(Vars::Aimbot::Projectile::AutoAirblast, FDropdownEnum::Right);
+					FTooltip("Automatically airblast incoming projectiles away. Use as Pyro.");
 					FSlider(Vars::Aimbot::Projectile::AutodetRadius, FSliderEnum::Left);
+					FTooltip("% of explosion radius required to trigger auto-detonate.");
 					FSlider(Vars::Aimbot::Projectile::SplashRadius, FSliderEnum::Right);
+					FTooltip("% of splash radius used when targeting with area-effect weapons.");
 					PushTransparent(!Vars::Aimbot::Projectile::AutoRelease.Value);
 					{
 						FSlider(Vars::Aimbot::Projectile::AutoRelease);
+						FTooltip("Auto-release Medi Gun uber at this charge %. Use as Medic.");
 					}
 					PopTransparent();
 					FToggle(Vars::Aimbot::Projectile::GrapplingHookAim);
+					FTooltip("Automatically aim the grappling hook at nearby surfaces.");
 				} EndSection();
 				if (Vars::Debug::Options.Value)
 				{
@@ -483,8 +520,11 @@ void CMenu::MenuAimbot(int iTab)
 				if (Section("Backtrack"))
 				{
 					FSlider(Vars::Backtrack::Latency, FSliderEnum::Left);
+					FTooltip("Simulated network latency added for backtracking (ms). Higher = more record history.");
 					FSlider(Vars::Backtrack::Interp, FSliderEnum::Right);
+					FTooltip("Fake interpolation added for backtracking (ms). Adjusts available record window.");
 					FSlider(Vars::Backtrack::Window);
+					FTooltip("Time window of past player positions available to backtrack to (ms).");
 					//FToggle(Vars::Backtrack::PreferOnShot, FToggleEnum::Right);
 				} EndSection();
 				if (Vars::Debug::Options.Value)
@@ -497,12 +537,19 @@ void CMenu::MenuAimbot(int iTab)
 				if (Section("Healing", 8))
 				{
 					FDropdown(Vars::Aimbot::Healing::HealPriority);
+					FTooltip("Priority order for selecting which teammate to heal first.");
 					FToggle(Vars::Aimbot::Healing::AutoHeal, FToggleEnum::Left);
+					FTooltip("Auto-aim and use medigun on nearby low-HP teammates. Use as Medic.");
 					FToggle(Vars::Aimbot::Healing::AutoArrow, FToggleEnum::Right);
+					FTooltip("Auto-fire crossbow bolts at low-HP teammates. Use as Medic with Crossbow.");
 					FToggle(Vars::Aimbot::Healing::AutoSandvich, FToggleEnum::Left);
+					FTooltip("Auto-throw sandvich at low-HP teammates. Use as Heavy.");
 					FToggle(Vars::Aimbot::Healing::AutoVaccinator, FToggleEnum::Right);
+					FTooltip("Auto-switch Vaccinator resistances based on incoming damage type. Use as Medic.");
 					FToggle(Vars::Aimbot::Healing::ActivateOnVoice, FToggleEnum::Left);
+					FTooltip("Activate auto-heal when you issue a voice command.");
 					FSlider(Vars::Aimbot::Healing::ActivationHealthPercent, FSliderEnum::Right, Vars::Aimbot::Healing::ActivationHealthPercent[DEFAULT_BIND] <= 0.f ? "Off" : "%g%%");
+					FTooltip("Only auto-heal targets below this HP percentage. 0 = always heal.");
 					PushTransparent(!Vars::Aimbot::Healing::AutoArrow.Value);
 					{
 						FToggleSlider(Vars::Aimbot::Healing::AutoSwitch, Vars::Aimbot::Healing::AutoSwitchHealth);
@@ -523,9 +570,13 @@ void CMenu::MenuAimbot(int iTab)
 				if (Section("Melee", 8))
 				{
 					FToggle(Vars::Aimbot::Melee::AutoBackstab, FToggleEnum::Left);
+					FTooltip("Automatically aim for backstabs with Spy knife.");
 					FToggle(Vars::Aimbot::Melee::IgnoreRazorback, FToggleEnum::Right);
+					FTooltip("Allow backstabbing Snipers who have the Razorback equipped.");
 					FToggle(Vars::Aimbot::Melee::SwingPrediction, FToggleEnum::Left);
+					FTooltip("Predict melee swing timing for more reliable hits.");
 					FToggle(Vars::Aimbot::Melee::WhipTeam, FToggleEnum::Right);
+					FTooltip("Allow the Soldier's Whip to also hit friendly teammates.");
 				} EndSection();
 				if (Vars::Debug::Options.Value)
 				{
@@ -540,10 +591,15 @@ void CMenu::MenuAimbot(int iTab)
 				if (Section("Auto Engie", 8))
 				{
 					FDropdown(Vars::Aimbot::AutoEngie::AutoRepair);
+					FTooltip("Automatically repair damaged buildings (sentry, dispenser, teleporter). Use as Engineer.");
 					FDropdown(Vars::Aimbot::AutoEngie::AutoUpgrade);
+					FTooltip("Automatically upgrade buildings when you have enough metal. Use as Engineer.");
 					FSlider(Vars::Aimbot::AutoEngie::AutoUpgradeSentryLVL);
+					FTooltip("Maximum level to auto-upgrade the sentry to (1-3).");
 					FSlider(Vars::Aimbot::AutoEngie::AutoUpgradeDispenserLVL);
+					FTooltip("Maximum level to auto-upgrade the dispenser to (1-3).");
 					FSlider(Vars::Aimbot::AutoEngie::AutoUpgradeTeleporterLVL);
+					FTooltip("Maximum level to auto-upgrade the teleporter to (1-3).");
 				} EndSection();
 			}
 			EndTable();
@@ -927,11 +983,14 @@ void CMenu::MenuVisuals(int iTab)
 					FColorPicker(Vars::Colors::Line, FColorPickerEnum::None, { -H::Draw.Scale(12), 0 });
 					FColorPicker(Vars::Colors::LineIgnoreZ);
 					FToggle(Vars::Visuals::Line::Enabled);
+					FTooltip("Draw a line from you to the current aimbot target.");
 					FSlider(Vars::Visuals::Line::DrawDuration);
+					FTooltip("How long (s) the aim line stays visible after each frame.");
 				} EndSection();
 				if (Section("Hitbox"))
 				{
 					FDropdown(Vars::Visuals::Hitbox::BonesEnabled, FDropdownEnum::None, -50);
+					FTooltip("Draw bone hitbox outlines. Select which entities to show hitboxes for.");
 					FColorPicker(Vars::Colors::BoneHitboxEdge, FColorPickerEnum::SameLine, {}, { H::Draw.Scale(10), H::Draw.Scale(20) });
 					FColorPicker(Vars::Colors::BoneHitboxEdgeIgnoreZ, FColorPickerEnum::SameLine, {}, { H::Draw.Scale(10), H::Draw.Scale(20) });
 					FColorPicker(Vars::Colors::BoneHitboxFace, FColorPickerEnum::SameLine, { H::Draw.Scale(10), 0 }, { H::Draw.Scale(10), H::Draw.Scale(20) });
@@ -942,12 +1001,14 @@ void CMenu::MenuVisuals(int iTab)
 					FColorPicker(Vars::Colors::TargetHitboxFaceIgnoreZ, FColorPickerEnum::SameLine, {}, { H::Draw.Scale(10), H::Draw.Scale(20) });
 
 					FDropdown(Vars::Visuals::Hitbox::BoundsEnabled, FDropdownEnum::None, -50);
+					FTooltip("Draw bounding box hitboxes. Select which entities to show bounds for.");
 					FColorPicker(Vars::Colors::BoundHitboxEdge, FColorPickerEnum::SameLine, {}, { H::Draw.Scale(10), H::Draw.Scale(40) });
 					FColorPicker(Vars::Colors::BoundHitboxEdgeIgnoreZ, FColorPickerEnum::SameLine, {}, { H::Draw.Scale(10), H::Draw.Scale(40) });
 					FColorPicker(Vars::Colors::BoundHitboxFace, FColorPickerEnum::SameLine, { H::Draw.Scale(10), 0 }, { H::Draw.Scale(10), H::Draw.Scale(40) });
 					FColorPicker(Vars::Colors::BoundHitboxFaceIgnoreZ, FColorPickerEnum::SameLine, {}, { H::Draw.Scale(10), H::Draw.Scale(40) });
 
 					FSlider(Vars::Visuals::Hitbox::DrawDuration);
+					FTooltip("How long (s) hitbox visuals persist after being drawn.");
 				} EndSection();
 			}
 			/* Column 2 */
@@ -956,25 +1017,35 @@ void CMenu::MenuVisuals(int iTab)
 				if (Section("Simulation"))
 				{
 					FDropdown(Vars::Visuals::Simulation::PlayerPath, FDropdownEnum::Left, -20);
+					FTooltip("Draw simulated player movement paths.");
 					FColorPicker(Vars::Colors::PlayerPath, FColorPickerEnum::SameLine, {}, { H::Draw.Scale(10), H::Draw.Scale(40) });
 					FColorPicker(Vars::Colors::PlayerPathIgnoreZ, FColorPickerEnum::SameLine, {}, { H::Draw.Scale(10), H::Draw.Scale(40) });
 					FDropdown(Vars::Visuals::Simulation::ProjectilePath, FDropdownEnum::Right, -20);
+					FTooltip("Draw simulated projectile trajectories.");
 					FColorPicker(Vars::Colors::ProjectilePath, FColorPickerEnum::SameLine, {}, { H::Draw.Scale(10), H::Draw.Scale(40) });
 					FColorPicker(Vars::Colors::ProjectilePathIgnoreZ, FColorPickerEnum::SameLine, {}, { H::Draw.Scale(10), H::Draw.Scale(40) });
 					FDropdown(Vars::Visuals::Simulation::TrajectoryPath, FDropdownEnum::Left, -20);
+					FTooltip("Draw custom trajectory paths for debugging.");
 					FColorPicker(Vars::Colors::TrajectoryPath, FColorPickerEnum::SameLine, {}, { H::Draw.Scale(10), H::Draw.Scale(40) });
 					FColorPicker(Vars::Colors::TrajectoryPathIgnoreZ, FColorPickerEnum::SameLine, {}, { H::Draw.Scale(10), H::Draw.Scale(40) });
 					FDropdown(Vars::Visuals::Simulation::ShotPath, FDropdownEnum::Right, -20);
+					FTooltip("Draw paths of actual fired shots.");
 					FColorPicker(Vars::Colors::ShotPath, FColorPickerEnum::SameLine, {}, { H::Draw.Scale(10), H::Draw.Scale(40) });
 					FColorPicker(Vars::Colors::ShotPathIgnoreZ, FColorPickerEnum::SameLine, {}, { H::Draw.Scale(10), H::Draw.Scale(40) });
 					FDropdown(Vars::Visuals::Simulation::SplashRadius, FDropdownEnum::None, -20);
+					FTooltip("Draw explosion splash radius visualization.");
 					FColorPicker(Vars::Colors::SplashRadius, FColorPickerEnum::SameLine, {}, { H::Draw.Scale(10), H::Draw.Scale(40) });
 					FColorPicker(Vars::Colors::SplashRadiusIgnoreZ, FColorPickerEnum::SameLine, {}, { H::Draw.Scale(10), H::Draw.Scale(40) });
 					FToggle(Vars::Visuals::Simulation::Timed, FToggleEnum::Left);
+					FTooltip("Keep simulation visuals visible for a set duration instead of one frame.");
 					FToggle(Vars::Visuals::Simulation::Box, FToggleEnum::Right);
+					FTooltip("Draw a bounding box around the simulation target.");
 					FToggle(Vars::Visuals::Simulation::ProjectileCamera, FToggleEnum::Left);
+					FTooltip("Attach the camera to the simulated projectile.");
 					FToggle(Vars::Visuals::Simulation::SwingLines, FToggleEnum::Right);
+					FTooltip("Draw melee swing prediction lines for timing visualization.");
 					FSlider(Vars::Visuals::Simulation::DrawDuration);
+					FTooltip("How long (s) simulation visuals remain on screen.");
 				} EndSection();
 				if (Vars::Debug::Options.Value)
 				{
@@ -1030,36 +1101,51 @@ void CMenu::MenuVisuals(int iTab)
 				if (Section("UI"))
 				{
 					FDropdown(Vars::Visuals::UI::StreamerMode, FDropdownEnum::Left);
+					FTooltip("Hide potentially identifying player names for streaming (Off/Local/Friends/Party/All).");
 					FDropdown(Vars::Visuals::UI::ChatTags, FDropdownEnum::Right, -10);
+					FTooltip("Show cheat tags next to player names in the chat.");
 					FColorPicker(Vars::Colors::Local, FColorPickerEnum::SameLine, {}, { H::Draw.Scale(10), H::Draw.Scale(40) });
 					PushTransparent(!Vars::Visuals::UI::FieldOfView.Value);
 					{
 						FSlider(Vars::Visuals::UI::FieldOfView);
+						FTooltip("Override the game's field of view. 0 = off (use default).");
 					}
 					PopTransparent();
 					PushTransparent(!Vars::Visuals::UI::ZoomFieldOfView.Value);
 					{
 						FSlider(Vars::Visuals::UI::ZoomFieldOfView);
+						FTooltip("Override the zoomed/scoped field of view. 0 = off.");
 					}
 					PopTransparent();
 					PushTransparent(!Vars::Visuals::UI::AspectRatio.Value);
 					{
 						FSlider(Vars::Visuals::UI::AspectRatio);
+						FTooltip("Override the game aspect ratio. 0 = off (use default).");
 					}
 					PopTransparent();
 					FToggle(Vars::Visuals::UI::RevealScoreboard, FToggleEnum::Left);
+					FTooltip("Show hidden player information on the scoreboard.");
 					FToggle(Vars::Visuals::UI::ScoreboardUtility, FToggleEnum::Right);
+					FTooltip("Add extra controls and info to the scoreboard.");
 					FToggle(Vars::Visuals::UI::ScoreboardColors, FToggleEnum::Left);
+					FTooltip("Color players on the scoreboard based on their assigned tags.");
 					FToggle(Vars::Visuals::UI::CleanScreenshots, FToggleEnum::Right);
+					FTooltip("Take screenshots without the cheat's HUD overlays.");
 				} EndSection();
 				if (Section("Thirdperson", 8))
 				{
 					FToggle(Vars::Visuals::Thirdperson::Enabled, FToggleEnum::Left);
+					FTooltip("Enable third-person camera view. Use a bind to toggle.");
 					FToggle(Vars::Visuals::Thirdperson::Crosshair, FToggleEnum::Right);
+					FTooltip("Show the crosshair while in thirdperson mode.");
 					FToggle(Vars::Visuals::Thirdperson::Collision, FToggleEnum::Left);
+					FTooltip("Prevent the thirdperson camera from clipping through walls.");
 					FSlider(Vars::Visuals::Thirdperson::Distance);
+					FTooltip("Camera distance behind the player in thirdperson mode.");
 					FSlider(Vars::Visuals::Thirdperson::Right);
+					FTooltip("Horizontal offset of the camera to the right.");
 					FSlider(Vars::Visuals::Thirdperson::Up);
+					FTooltip("Vertical offset of the camera upwards.");
 				} EndSection();
 				if (Vars::Debug::Options.Value)
 				{
@@ -1073,15 +1159,24 @@ void CMenu::MenuVisuals(int iTab)
 					// https://developer.valvesoftware.com/wiki/Team_Fortress_2/Particles
 					// https://forums.alliedmods.net/showthread.php?t=127111
 					FSDropdown(Vars::Visuals::Effects::BulletTracer, FDropdownEnum::Left);
+					FTooltip("Replace bullet tracer particle effect with a custom one.");
 					FSDropdown(Vars::Visuals::Effects::CritTracer, FDropdownEnum::Right);
+					FTooltip("Replace critical hit tracer particle effect.");
 					FSDropdown(Vars::Visuals::Effects::MedigunBeam, FDropdownEnum::Left);
+					FTooltip("Replace the medigun healing beam particle effect.");
 					FSDropdown(Vars::Visuals::Effects::MedigunCharge, FDropdownEnum::Right);
+					FTooltip("Replace the medigun uber-charge activation particle effect.");
 					FSDropdown(Vars::Visuals::Effects::ProjectileTrail, FDropdownEnum::Left);
+					FTooltip("Replace projectile trail particle effect (rockets, stickies, etc.).");
 					FDropdown(Vars::Visuals::Effects::SpellFootsteps, FDropdownEnum::Right, -10);
+					FTooltip("Show colored footstep trails behind players (Color/Team/Halloween).");
 					FColorPicker(Vars::Colors::SpellFootstep, FColorPickerEnum::SameLine | FColorPickerEnum::NoTooltip, {}, { H::Draw.Scale(10), H::Draw.Scale(40) });
 					FDropdown(Vars::Visuals::Effects::RagdollEffects);
+					FTooltip("Apply effects to ragdolls when players die (burning, electrocuted, gold, etc.).");
 					FToggle(Vars::Visuals::Effects::DrawIconsThroughWalls);
+					FTooltip("Draw status icons (spells, etc.) on players through walls.");
 					FToggle(Vars::Visuals::Effects::DrawDamageNumbersThroughWalls);
+					FTooltip("Draw floating damage numbers through walls.");
 				} EndSection();
 			}
 			/* Column 2 */
@@ -1090,45 +1185,71 @@ void CMenu::MenuVisuals(int iTab)
 				if (Section("Removals", 8))
 				{
 					FToggle(Vars::Visuals::Removals::Interpolation, FToggleEnum::Left);
+					FTooltip("Remove client interpolation for immediate, low-latency position updates.");
 					PushTransparent(Vars::Visuals::Removals::Interpolation.Value);
 					{
 						FToggle(Vars::Visuals::Removals::Lerp, FToggleEnum::Right);
+						FTooltip("Remove lerp from interpolation (only active when Interpolation is off).");
 					}
 					PopTransparent();
 					FToggle(Vars::Visuals::Removals::Disguises, FToggleEnum::Left);
+					FTooltip("Remove Spy disguises visually to show their true player model.");
 					FToggle(Vars::Visuals::Removals::Taunts, FToggleEnum::Right);
+					FTooltip("Skip taunt animations so they finish instantly.");
 					FToggle(Vars::Visuals::Removals::Scope, FToggleEnum::Left);
+					FTooltip("Remove the sniper scope overlay from the screen.");
 					FToggle(Vars::Visuals::Removals::PostProcessing, FToggleEnum::Right);
+					FTooltip("Remove post-processing visual effects (bloom, color grading).");
 					FToggle(Vars::Visuals::Removals::ScreenOverlays, FToggleEnum::Left);
+					FTooltip("Remove damage/fire/bleeding screen overlay effects.");
 					FToggle(Vars::Visuals::Removals::ScreenEffects, FToggleEnum::Right);
+					FTooltip("Remove flash/stun/jarate screen distortion effects.");
 					FToggle(Vars::Visuals::Removals::ViewPunch, FToggleEnum::Left);
+					FTooltip("Remove weapon recoil view punch for a steadier view.");
 					FToggle(Vars::Visuals::Removals::AngleForcing, FToggleEnum::Right);
+					FTooltip("Remove forced view angle events (e.g. stun/taunt locks).");
 					FToggle(Vars::Visuals::Removals::Ragdolls, FToggleEnum::Left);
+					FTooltip("Remove ragdoll physics on player death to improve performance.");
 					FToggle(Vars::Visuals::Removals::Gibs, FToggleEnum::Right);
+					FTooltip("Remove gib particles on player death to improve performance.");
 					FToggle(Vars::Visuals::Removals::MOTD, FToggleEnum::Left);
+					FTooltip("Block the Message Of The Day panel on server join.");
 				} EndSection();
 				if (Section("Viewmodel", 8))
 				{
 					FToggle(Vars::Visuals::Viewmodel::CrosshairAim, FToggleEnum::Left);
+					FTooltip("Move the crosshair to the viewmodel's actual aim position.");
 					FToggle(Vars::Visuals::Viewmodel::ViewmodelAim, FToggleEnum::Right);
+					FTooltip("Animate the viewmodel to follow the aimbot's target direction.");
 					FSlider(Vars::Visuals::Viewmodel::OffsetX, FSliderEnum::Left);
+					FTooltip("Shift the viewmodel left/right.");
 					FSlider(Vars::Visuals::Viewmodel::Pitch, FSliderEnum::Right);
+					FTooltip("Pitch rotation of the viewmodel.");
 					FSlider(Vars::Visuals::Viewmodel::OffsetY, FSliderEnum::Left);
+					FTooltip("Shift the viewmodel forward/backward.");
 					FSlider(Vars::Visuals::Viewmodel::Yaw, FSliderEnum::Right);
+					FTooltip("Yaw rotation of the viewmodel.");
 					FSlider(Vars::Visuals::Viewmodel::OffsetZ, FSliderEnum::Left);
+					FTooltip("Shift the viewmodel up/down.");
 					FSlider(Vars::Visuals::Viewmodel::Roll, FSliderEnum::Right);
+					FTooltip("Roll rotation of the viewmodel.");
 					PushTransparent(!Vars::Visuals::Viewmodel::SwayScale.Value || !Vars::Visuals::Viewmodel::SwayInterp.Value);
 					{
 						FSlider(Vars::Visuals::Viewmodel::SwayScale, FSliderEnum::Left);
+						FTooltip("Scale the viewmodel sway amount (0 = no sway).");
 						FSlider(Vars::Visuals::Viewmodel::SwayInterp, FSliderEnum::Right);
+						FTooltip("Interpolation speed for viewmodel sway (0 = instant).");
 					}
 					PopTransparent();
 				} EndSection();
 				if (Section("World"))
 				{
 					FDropdown(Vars::Visuals::World::Modulations);
+					FTooltip("Apply color modulations to world, sky, props, particles, or fog.");
 					FSDropdown(Vars::Visuals::World::WorldTexture, FDropdownEnum::Left);
+					FTooltip("Replace world surface textures (Default/Dev/Camo/Black/White/Gray/Flat).");
 					FSDropdown(Vars::Visuals::World::SkyboxChanger, FDropdownEnum::Right);
+					FTooltip("Change the current skybox to a custom one.");
 					PushTransparent(!(Vars::Visuals::World::Modulations.Value & Vars::Visuals::World::ModulationsEnum::World));
 					{
 						FColorPicker(Vars::Colors::WorldModulation, FColorPickerEnum::Left);
@@ -1155,8 +1276,11 @@ void CMenu::MenuVisuals(int iTab)
 					}
 					PopTransparent();
 					FToggle(Vars::Visuals::World::NearPropFade, FToggleEnum::Left);
+					FTooltip("Fade props that are very close to the camera.");
 					FToggle(Vars::Visuals::World::NoPropFade, FToggleEnum::Right);
+					FTooltip("Prevent props from fading out at long distances.");
 					FDropdown(Vars::Visuals::World::ShowTriggers);
+					FTooltip("Visualize trigger volumes in the world (hurt, push, respawn room, etc.).");
 					PushTransparent(!(Vars::Visuals::World::ShowTriggers.Value & Vars::Visuals::World::ShowTriggersEnum::Hurt));
 					{
 						FColorPicker(Vars::Colors::HurtTrigger, FColorPickerEnum::Left);
@@ -1212,6 +1336,7 @@ void CMenu::MenuVisuals(int iTab)
 				if (Section("Other"))
 				{
 					FToggle(Vars::Visuals::Other::KillstreakWeapons);
+					FTooltip("Show killstreak sheen effects on weapons.");
 				} EndSection();
 			}
 			EndTable();
@@ -1234,9 +1359,13 @@ void CMenu::MenuVisuals(int iTab)
 					FColorPicker(Vars::Menu::Theme::Inactive, FColorPickerEnum::Right);
 
 					FSDropdown(Vars::Menu::CheatTitle, FDropdownEnum::Left);
+					FTooltip("The title text shown in the menu header.");
 					FSDropdown(Vars::Menu::CheatTag, FDropdownEnum::Right);
+					FTooltip("The tag shown next to player names in chat.");
 					FKeybind(Vars::Menu::PrimaryKey, FButtonEnum::Left, { Vars::Menu::SecondaryKey[DEFAULT_BIND], VK_LBUTTON, VK_RBUTTON });
+					FTooltip("Primary key to open the menu.");
 					FKeybind(Vars::Menu::SecondaryKey, FButtonEnum::Right | FButtonEnum::SameLine, { Vars::Menu::PrimaryKey[DEFAULT_BIND], VK_LBUTTON, VK_RBUTTON });
+					FTooltip("Secondary key for quick menu toggle or secondary actions.");
 				} EndSection();
 			}
 
@@ -1246,9 +1375,12 @@ void CMenu::MenuVisuals(int iTab)
 				if (Section("Indicators"))
 				{
 					FDropdown(Vars::Menu::Indicators);
+					FTooltip("Select which HUD indicators to display (ticks, crits, spectators, ping, etc.).");
 					if (FSlider(Vars::Menu::Scale))
 						H::Fonts.Reload(Vars::Menu::Scale[DEFAULT_BIND]);
+					FTooltip("Scale the entire menu UI (0.75x - 2.0x).");
 					FToggle(Vars::Menu::CheapText);
+					FTooltip("Use cheaper text rendering for better performance on low-end systems.");
 				} EndSection();
 				if (Vars::Debug::Options.Value)
 				{
@@ -1290,30 +1422,44 @@ void CMenu::MenuHvH(int iTab)
 				if (Section("Doubletap", 8))
 				{
 					FToggle(Vars::Doubletap::Doubletap, FToggleEnum::Left);
+					FTooltip("Fire two shots in one tick by abusing charge mechanics. Best with Soldier/Demo. Use a bind.");
 					FToggle(Vars::Doubletap::Warp, FToggleEnum::Right);
+					FTooltip("Teleport forward before shooting to close distance instantly. Use with Doubletap.");
 					FToggle(Vars::Doubletap::RechargeTicks, FToggleEnum::Left);
+					FTooltip("Recharge doubletap ticks by choking packets instead of firing.");
 					FToggle(Vars::Doubletap::AntiWarp, FToggleEnum::Right);
+					FTooltip("Protect yourself against enemy warp exploits.");
 					FSlider(Vars::Doubletap::TickLimit, FSliderEnum::Left);
+					FTooltip("Max ticks consumed per doubletap shot. Higher = more powerful but slower recharge.");
 					FSlider(Vars::Doubletap::WarpRate, FSliderEnum::Right);
+					FTooltip("Ticks used for the warp teleport. Use with Warp enabled.");
 					FSlider(Vars::Doubletap::RechargeLimit, FSliderEnum::Left);
+					FTooltip("Max ticks used during the recharge phase after doubletap.");
 					FSlider(Vars::Doubletap::PassiveRecharge, FSliderEnum::Right);
+					FTooltip("Passively recharge ticks while not actively shooting.");
 				} EndSection();
 				if (Section("Fakelag"))
 				{
 					FDropdown(Vars::Fakelag::Fakelag, FSliderEnum::Left);
+					FTooltip("Packet choking mode. Plain - fixed ticks. Random - random range. Adaptive - adapts to your movement.");
 					FDropdown(Vars::Fakelag::Options, FDropdownEnum::Right);
+					FTooltip("Conditions under which fakelag is active (moving, unducking, grounded).");
 					PushTransparent(Vars::Fakelag::Fakelag.Value != Vars::Fakelag::FakelagEnum::Plain);
 					{
 						FSlider(Vars::Fakelag::PlainTicks, FSliderEnum::Left);
+						FTooltip("Number of ticks to choke with Plain mode.");
 					}
 					PopTransparent();
 					PushTransparent(Vars::Fakelag::Fakelag.Value != Vars::Fakelag::FakelagEnum::Random);
 					{
 						FSlider(Vars::Fakelag::RandomTicks, FSliderEnum::Right);
+						FTooltip("Random tick range to choke with Random mode.");
 					}
 					PopTransparent();
 					FToggle(Vars::Fakelag::UnchokeOnAttack, FToggleEnum::Left);
+					FTooltip("Release choked packets immediately when you attack for reliable hit registration.");
 					FToggle(Vars::Fakelag::RetainBlastJump, FToggleEnum::Right);
+					FTooltip("Keep fakelag ticks active during blast jumps to preserve movement advantage.");
 				} EndSection();
 				if (Vars::Debug::Options.Value)
 				{
@@ -1325,22 +1471,33 @@ void CMenu::MenuHvH(int iTab)
 				if (Section("Antiaim", 8))
 				{
 					FToggle(Vars::AntiAim::Enabled);
+					FTooltip("Enable anti-aim to manipulate your angles and make it harder for enemies to hit you.");
 					FDropdown(Vars::AntiAim::PitchReal, FDropdownEnum::Left);
+					FTooltip("Real (server-side) pitch angle manipulation sent to the server.");
 					FDropdown(Vars::AntiAim::PitchFake, FDropdownEnum::Right);
+					FTooltip("Fake pitch angle sent to other clients, different from the server angle.");
 					FDropdown(Vars::AntiAim::YawReal, FDropdownEnum::Left);
+					FTooltip("Real (server-side) yaw angle manipulation. This is the actual hit direction.");
 					FDropdown(Vars::AntiAim::YawFake, FDropdownEnum::Right);
+					FTooltip("Fake yaw angle shown to other clients to mislead enemies.");
 					FDropdown(Vars::AntiAim::RealYawBase, FDropdownEnum::Left);
+					FTooltip("Reference direction for real yaw calculation (View or Target).");
 					FDropdown(Vars::AntiAim::FakeYawBase, FDropdownEnum::Right);
+					FTooltip("Reference direction for fake yaw calculation (View or Target).");
 					FSlider(Vars::AntiAim::RealYawOffset, FSliderEnum::Left);
+					FTooltip("Degree offset added to the real yaw angle.");
 					FSlider(Vars::AntiAim::FakeYawOffset, FSliderEnum::Right);
+					FTooltip("Degree offset added to the fake yaw angle.");
 					PushTransparent(Vars::AntiAim::YawReal.Value != Vars::AntiAim::YawEnum::Edge && Vars::AntiAim::YawReal.Value != Vars::AntiAim::YawEnum::Jitter);
 					{
 						FSlider(Vars::AntiAim::RealYawValue, FSliderEnum::Left);
+						FTooltip("Edge/jitter range value for real yaw.");
 					}
 					PopTransparent();
 					PushTransparent(Vars::AntiAim::YawFake.Value != Vars::AntiAim::YawEnum::Edge && Vars::AntiAim::YawFake.Value != Vars::AntiAim::YawEnum::Jitter);
 					{
 						FSlider(Vars::AntiAim::FakeYawValue, FSliderEnum::Right);
+						FTooltip("Edge/jitter range value for fake yaw.");
 					}
 					PopTransparent();
 					PushTransparent(Vars::AntiAim::YawFake.Value != Vars::AntiAim::YawEnum::Spin
@@ -1351,12 +1508,16 @@ void CMenu::MenuHvH(int iTab)
 						&& Vars::AntiAim::YawReal.Value != Vars::AntiAim::YawEnum::Helix);
 					{
 						FSlider(Vars::AntiAim::SpinSpeed, FSliderEnum::Left);
+						FTooltip("Rotation speed for Spin/Tornado/Helix yaw modes.");
 					}
 					PopTransparent();
 					SetCursorPos({ GetWindowWidth() / 2 + GetStyle().WindowPadding.x / 2, GetRowPos() + H::Draw.Scale(8) });
 					FToggle(Vars::AntiAim::MinWalk, FToggleEnum::Left);
+					FTooltip("Slow-walk to keep fakelag ticks active while moving.");
 					FToggle(Vars::AntiAim::AntiOverlap, FToggleEnum::Left);
+					FTooltip("Prevent real and fake yaw angles from overlapping each other.");
 					FToggle(Vars::AntiAim::InvalidShootPitch, FToggleEnum::Right);
+					FTooltip("Hide the real pitch angle when shooting to confuse resolver.");
 				} EndSection();
 			}
 			/* Column 2 */
@@ -1365,42 +1526,55 @@ void CMenu::MenuHvH(int iTab)
 				if (Section("Resolver", 8))
 				{
 					FToggle(Vars::Resolver::Enabled, FToggleEnum::Left);
+					FTooltip("Enable resolver to predict and counter enemy anti-aim angles.");
 					PushTransparent(!Vars::Resolver::Enabled.Value);
 					{
 						FToggle(Vars::Resolver::AutoResolve, FToggleEnum::Right);
+						FTooltip("Automatically adjust resolver corrections based on missed shots.");
 						PushTransparent(Transparent || !Vars::Resolver::AutoResolve.Value);
 						{
 							FToggle(Vars::Resolver::AutoResolveCheatersOnly, FToggleEnum::Left);
+							FTooltip("Only auto-resolve players detected as cheaters.");
 							FToggle(Vars::Resolver::AutoResolveHeadshotOnly, FToggleEnum::Right);
+							FTooltip("Only auto-resolve when the aimbot is targeting the head hitbox.");
 							PushTransparent(Transparent || !Vars::Resolver::AutoResolveYawAmount.Value);
 							{
 								FSlider(Vars::Resolver::AutoResolveYawAmount, FSliderEnum::Left);
+								FTooltip("Yaw correction step size applied by auto-resolve.");
 							}
 							PopTransparent();
 							PushTransparent(Transparent || !Vars::Resolver::AutoResolvePitchAmount.Value);
 							{
 								FSlider(Vars::Resolver::AutoResolvePitchAmount, FSliderEnum::Right);
+								FTooltip("Pitch correction step size applied by auto-resolve.");
 							}
 							PopTransparent();
 						}
 						PopTransparent();
 						FSlider(Vars::Resolver::CycleYaw, FSliderEnum::Left);
+						FTooltip("Manual yaw offset to cycle through when resolving. Use a bind.");
 						FSlider(Vars::Resolver::CyclePitch, FSliderEnum::Right);
+						FTooltip("Manual pitch offset to cycle through when resolving. Use a bind.");
 						FToggle(Vars::Resolver::CycleView, FToggleEnum::Left);
+						FTooltip("Include the target's view angle in the resolver cycle.");
 						FToggle(Vars::Resolver::CycleMinwalk, FToggleEnum::Right);
+						FTooltip("Include minwalk state detection in the resolver cycle.");
 					}
 					PopTransparent();
 				} EndSection();
 				if (Section("Auto Peek", 8))
 				{
 					FToggle(Vars::AutoPeek::Enabled);
+					FTooltip("Automatically peek and return to cover using a bind key.");
 				} EndSection();
 				if (Section("Speedhack", 8))
 				{
 					FToggle(Vars::Speedhack::Enabled);
+					FTooltip("Move faster than normal by manipulating tick timing. Easy to detect.");
 					PushTransparent(!Vars::Speedhack::Enabled.Value);
 					{
 						FSlider(Vars::Speedhack::Amount);
+						FTooltip("Speed multiplier (1 = normal). Higher values are more noticeable.");
 					}
 					PopTransparent();
 				} EndSection();
@@ -1429,25 +1603,41 @@ void CMenu::MenuMisc(int iTab)
 				if (Section("Movement"))
 				{
 					FDropdown(Vars::Misc::Movement::AutoStrafe);
+					FTooltip("Auto-strafe while airborne. Legit - humanlike. Directional - steers towards mouse.");
 					PushTransparent(Vars::Misc::Movement::AutoStrafe.Value != Vars::Misc::Movement::AutoStrafeEnum::Directional);
 					{
 						FSlider(Vars::Misc::Movement::AutoStrafeTurnScale, FSliderEnum::Left);
+						FTooltip("How quickly directional strafe turns towards the mouse direction.");
 						FSlider(Vars::Misc::Movement::AutoStrafeMaxDelta, FSliderEnum::Right);
+						FTooltip("Max angle change per tick for directional auto-strafe.");
 					}
 					PopTransparent();
 					FToggle(Vars::Misc::Movement::Bunnyhop, FToggleEnum::Left);
+					FTooltip("Auto-jump on landing to maintain maximum air speed.");
 					FToggle(Vars::Misc::Movement::EdgeJump, FToggleEnum::Right);
+					FTooltip("Auto-jump when near the edge of a surface to preserve momentum.");
 					FToggle(Vars::Misc::Movement::AutoJumpbug, FToggleEnum::Left); // this is unreliable without setups, do not depend on it!
+					FTooltip("Attempt to jump-bug to negate fall damage. Unreliable without specific setups.");
 					FToggle(Vars::Misc::Movement::BreakJump, FToggleEnum::Right);
+					FTooltip("Cancel jump momentum to stop height gain quickly.");
 					FToggle(Vars::Misc::Movement::AutoRocketJump, FToggleEnum::Left);
+					FTooltip("Automatically fire and jump off your own rocket. Use as Soldier/Demo.");
 					FToggle(Vars::Misc::Movement::AutoFaNJump, FToggleEnum::Right);
+					FTooltip("Automatically use Force-a-Nature knockback for extra jumps. Use as Scout.");
 					FToggle(Vars::Misc::Movement::AutoCTap, FToggleEnum::Left);
+					FTooltip("Perform a crouch-tap on landing to preserve speed.");
 					FToggle(Vars::Misc::Movement::FastStop, FToggleEnum::Right);
+					FTooltip("Instantly stop movement by countering current momentum.");
 					FToggle(Vars::Misc::Movement::FastAccelerate, FToggleEnum::Left);
+					FTooltip("Steer into the air direction for faster acceleration.");
 					FToggle(Vars::Misc::Movement::DuckSpeed, FToggleEnum::Right);
+					FTooltip("Duck at full run speed without losing movement speed.");
 					FToggle(Vars::Misc::Movement::MovementLock, FToggleEnum::Left);
+					FTooltip("Lock movement direction to current strafe, preventing unwanted turns.");
 					FToggle(Vars::Misc::Movement::ShieldTurnRate, FToggleEnum::Right);
+					FTooltip("Remove the Demoman shield's turn rate limitation while charging.");
 					FToggle(Vars::Misc::Movement::NoPush, FToggleEnum::Left);
+					FTooltip("Ignore push forces from explosions and player impacts.");
 
 				} EndSection();
 				if (Vars::Debug::Options.Value)
@@ -1473,20 +1663,30 @@ void CMenu::MenuMisc(int iTab)
 				if (Section("Exploits"))
 				{
 					FToggle(Vars::Misc::Exploits::PureBypass, FToggleEnum::Left);
+					FTooltip("Bypass sv_pure restrictions to load custom files.");
 					FToggle(Vars::Misc::Exploits::CheatsBypass, FToggleEnum::Right);
+					FTooltip("Bypass sv_cheats restriction on servers.");
 					FToggle(Vars::Misc::Exploits::UnlockCVars, FToggleEnum::Left);
+					FTooltip("Unlock normally locked console variables.");
 					FToggle(Vars::Misc::Exploits::EquipRegionUnlock, FToggleEnum::Right);
+					FTooltip("Bypass cosmetic equip-region restrictions to wear conflicting items.");
 					FToggle(Vars::Misc::Exploits::BackpackExpander, FToggleEnum::Left);
+					FTooltip("Expand backpack slots client-side to see more items.");
 					FToggle(Vars::Misc::Exploits::BreakShootSound, FToggleEnum::Right);
 					FTooltip("breaks weapon shoot sound by switching weapons (soldier only)");
 					FToggleSlider(Vars::Misc::Exploits::PingReducer, Vars::Misc::Exploits::PingTarget);
+					FTooltip("Reduce displayed ping to the target value by manipulating packet timing.");
 				} EndSection();
 				if (Section("Mann vs. Machine", 8))
 				{
 					FToggle(Vars::Misc::MannVsMachine::InstantRespawn, FToggleEnum::Left);
+					FTooltip("Respawn immediately in MvM instead of waiting for the respawn timer.");
 					FToggle(Vars::Misc::MannVsMachine::InstantRevive, FToggleEnum::Right);
+					FTooltip("Instantly revive when a teammate initiates the revive process.");
 					FToggle(Vars::Misc::MannVsMachine::AllowInspect, FToggleEnum::Left);
+					FTooltip("Allow weapon inspection in MvM where it is normally disabled.");
 					FToggle(Vars::Misc::MannVsMachine::AutoMvmReadyUp, FToggleEnum::Right);
+					FTooltip("Automatically click Ready when the MvM ready-up timer appears.");
 					FToggleSlider(Vars::Misc::MannVsMachine::BuyBot, Vars::Misc::MannVsMachine::MaxCash);
 					FTooltip("WARNING: Works only on Mann Up missions with enough starting cash (600$) before the 1st wave!\nRequirements:\n1. Be a Vaccinator Medic\n2. Ping must be below 80ms\n3. Walk to the upgrade station\nPerforms MVM upgrade station exploit for extra cash.");
 				} EndSection();
@@ -1498,43 +1698,63 @@ void CMenu::MenuMisc(int iTab)
 				if (Section("Automation"))
 				{
 					FDropdown(Vars::Misc::Automation::AntiBackstab); // pitch/fake _might_ slip up some auto backstabs
+					FTooltip("Counter incoming backstabs by adjusting your pitch/yaw or faking angles.");
 					FToggle(Vars::Misc::Automation::AcceptItemDrops);
+					FTooltip("Automatically accept item drops at the end of each round.");
 					FToggle(Vars::Misc::Automation::AntiAFK, FToggleEnum::Left);
+					FTooltip("Prevent AFK kick by simulating small movements periodically.");
 					FDropdown(Vars::Misc::Automation::AntiAutobalance, FDropdownEnum::Right);
+					FTooltip("Prevent the server from automatically switching your team.");
 					FToggle(Vars::Misc::Automation::KartControl, FToggleEnum::Left);
+					FTooltip("Automatically control the bumper kart on Carnival maps.");
 					FToggle(Vars::Misc::Automation::AutoReport, FToggleEnum::Right);
+					FTooltip("Automatically submit a report for players tagged as cheaters.");
 					FToggle(Vars::Misc::Automation::AutoDisguise, FToggleEnum::Left);
+					FTooltip("Auto-disguise as a random enemy class when leaving spawn. Use as Spy.");
 					FToggle(Vars::Misc::Automation::AutoBanJoiner, FToggleEnum::Right);
+					FTooltip("Automatically call a vote to ban newly joined tagged cheaters.");
 					FToggle(Vars::Misc::Automation::JoinSpam, FToggleEnum::Left); // i think it doesnt work anymore but dh wanted it so here it is
+					FTooltip("Spam join/leave messages in the chat.");
 				} EndSection();
 				if (Section("Voting", 8))
 				{
 					FDropdown(Vars::Misc::Automation::AutoVote);
+					FTooltip("Automatically cast votes on kick/map votes. Select what to defend or assist.");
 					PushTransparent(!(Vars::Misc::Automation::AutoVote.Value & Vars::Misc::Automation::AutoVoteEnum::Defend) 
 						&& !(Vars::Misc::Automation::AutoVote.Value & Vars::Misc::Automation::AutoVoteEnum::Assist));
 					{
 						FToggle(Vars::Misc::Automation::AutoVoteDelay, FToggleEnum::Left);
+						FTooltip("Add a random delay before casting a vote to appear more natural.");
 						PushTransparent(!Vars::Misc::Automation::AutoVoteDelay.Value);
 						{
 							FSlider(Vars::Misc::Automation::AutoVoteDelayInterval, FSliderEnum::Right);
+							FTooltip("Max delay interval (s) before casting an automatic vote.");
 						}
 						PopTransparent();
 					}
 					PopTransparent();
 					FToggleSlider(Vars::Misc::Automation::AutoVoteMap, Vars::Misc::Automation::AutoVoteMapOption);
+					FTooltip("Automatically vote for a specific map option when a map vote appears.");
 				} EndSection();
 				if (Section("Taunts", 8))
 				{
 					FToggle(Vars::Misc::Automation::TauntControl);
+					FTooltip("Use taunts without stopping movement. Taunt while running.");
 					FToggleSlider(Vars::Misc::Automation::AutoTaunt, Vars::Misc::Automation::AutoTauntChance);
+					FTooltip("Randomly taunt after kills at the given probability (%).");
 				} EndSection();
 				if (Section("Game", 8))
 				{
 					FToggle(Vars::Misc::Game::AntiCheatCompatibility, FToggleEnum::Left);
+					FTooltip("Disable features that may trigger anti-cheat detection systems.");
 					FToggle(Vars::Misc::Game::F2PChatBypass, FToggleEnum::Right);
+					FTooltip("Allow Free-to-Play accounts to send chat messages without restrictions.");
 					FToggle(Vars::Misc::Game::NetworkFix, FToggleEnum::Left);
+					FTooltip("Apply network-level tweaks to improve connection stability.");
 					FToggle(Vars::Misc::Game::SetupBonesOptimization, FToggleEnum::Right);
+					FTooltip("Optimize bone setup to reduce CPU usage when many players are visible.");
 					FToggle(Vars::Misc::Game::VACBypass, FToggleEnum::Left);
+					FTooltip("Attempt to bypass VAC detection. Use with caution.");
 				} EndSection();
 				if (Vars::Debug::Options.Value)
 				{
@@ -1546,9 +1766,13 @@ void CMenu::MenuMisc(int iTab)
 				if (Section("Sound"))
 				{
 					FDropdown(Vars::Misc::Sound::Block);
+					FTooltip("Block specific game sounds (spy death, sentry, etc.) from playing.");
 					FToggle(Vars::Misc::Sound::HitsoundAlways, FToggleEnum::Left);
+					FTooltip("Play hitsound even when game HUD hitsound setting is disabled.");
 					FToggle(Vars::Misc::Sound::RemoveDSP, FToggleEnum::Right);
+					FTooltip("Remove digital signal processing (reverb/echo) from game sounds.");
 					FToggle(Vars::Misc::Sound::GiantWeaponSounds);
+					FTooltip("Replace weapon sounds with exaggerated giant robot weapon sounds.");
 				} EndSection();
 			}
 			EndTable();
@@ -1566,13 +1790,19 @@ void CMenu::MenuMisc(int iTab)
 				if (Section("Nav Engine"))
 				{
 					FToggle(Vars::Misc::Movement::NavEngine::Enabled, FToggleEnum::Left);
+					FTooltip("Enable the navigation mesh engine for bot pathfinding. Required for Navbot/Followbot.");
 					FToggle(Vars::Misc::Movement::NavEngine::PathInSetup, FToggleEnum::Right);
+					FTooltip("Pre-calculate paths during setup time before the round starts.");
 					FToggle(Vars::Misc::Movement::NavEngine::PathRandomization, FToggleEnum::Left);
+					FTooltip("Add slight randomness to paths to make bot movement less predictable.");
 					FToggle(Vars::Misc::Movement::NavBot::SmartJump, FToggleEnum::Right);
+					FTooltip("Use smart jump logic to navigate obstacles and height differences.");
 					PushTransparent(!Vars::Misc::Movement::NavEngine::Enabled.Value);
 					{
 						FDropdown(Vars::Misc::Movement::NavEngine::LookAtPath);
+						FTooltip("Look towards the next nav path node while moving (Off/Plain/Silent/Legit).");
 						FDropdown(Vars::Misc::Movement::NavEngine::Draw, FDropdownEnum::Multi, -60);
+						FTooltip("Visualize navigation mesh debug information on screen.");
 						FColorPicker(Vars::Colors::NavbotPath, FColorPickerEnum::SameLine, {}, { H::Draw.Scale(10), H::Draw.Scale(40) });
 						FColorPicker(Vars::Colors::NavbotPossiblePath, FColorPickerEnum::SameLine, {}, { H::Draw.Scale(10), H::Draw.Scale(40) });
 						// debug only and it crashes
@@ -1581,13 +1811,21 @@ void CMenu::MenuMisc(int iTab)
 						FColorPicker(Vars::Colors::NavbotBlacklist, FColorPickerEnum::SameLine, {}, { H::Draw.Scale(10), H::Draw.Scale(40) });
 
 						FSlider(Vars::Misc::Movement::NavEngine::StickyIgnoreTime, FSliderEnum::Left);
+						FTooltip("How long (s) to ignore a dangerous sticky bomb zone.");
 						FSlider(Vars::Misc::Movement::NavEngine::StuckDetectTime, FSliderEnum::Right);
+						FTooltip("Time (s) before the bot considers itself stuck.");
 						FSlider(Vars::Misc::Movement::NavEngine::StuckBlacklistTime, FSliderEnum::Left);
+						FTooltip("Duration (s) to blacklist an area where the bot got stuck.");
 						FSlider(Vars::Misc::Movement::NavEngine::StuckExpireTime, FSliderEnum::Right);
+						FTooltip("Time (s) before a stuck area blacklist expires.");
 						FSlider(Vars::Misc::Movement::NavEngine::StuckTime, FSliderEnum::None);
+						FTooltip("Short-duration threshold (s) to register as stuck.");
 						FToggle(Vars::Misc::Movement::NavEngine::VischeckEnabled);
+						FTooltip("Check if the bot has line-of-sight to its target before engaging.");
 						FSlider(Vars::Misc::Movement::NavEngine::VischeckTime, FSliderEnum::Left);
+						FTooltip("How long (s) to wait for a visibility check result.");
 						FSlider(Vars::Misc::Movement::NavEngine::VischeckCacheTime, FSliderEnum::Right);
+						FTooltip("How long (s) to cache visibility check results.");
 					}
 					PopTransparent();
 				} EndSection();
@@ -1596,32 +1834,42 @@ void CMenu::MenuMisc(int iTab)
 					PushTransparent(!Vars::Misc::Movement::NavEngine::Enabled.Value);
 					{
 						FToggle(Vars::Misc::Movement::NavBot::Enabled, FToggleEnum::Left);
+						FTooltip("Enable the autonomous navbot that plays the game automatically. Requires Nav Engine.");
 						PushTransparent(!Vars::Misc::Movement::NavBot::Enabled.Value || !Vars::Misc::Movement::NavEngine::Enabled.Value);
 						{
 							FDropdown(Vars::Misc::Movement::NavBot::RechargeDT);
+							FTooltip("Automatically recharge doubletap when conditions allow.");
 							PushTransparent(Transparent || !Vars::Misc::Movement::NavBot::RechargeDT.Value);
 								FSlider(Vars::Misc::Movement::NavBot::RechargeDTDelay, FSliderEnum::None);
+								FTooltip("Wait this many seconds before recharging doubletap.");
 							PopTransparent();
 							FDropdown(Vars::Misc::Movement::NavBot::Preferences);
+							FTooltip("Goals and behaviors the navbot will prioritize (health, ammo, objectives, etc.).");
 							FDropdown(Vars::Misc::Movement::NavBot::Blacklist);
+							FTooltip("Automatically blacklist navigation areas near these threat types.");
 							PushTransparent(Transparent || !(Vars::Misc::Movement::NavBot::Blacklist.Value & Vars::Misc::Movement::NavBot::BlacklistEnum::NormalThreats));
 							{
 								FSlider(Vars::Misc::Movement::NavBot::BlacklistDelay, FSliderEnum::Left);
+								FTooltip("Delay (s) between scans for normal threats to blacklist.");
 							}
 							PopTransparent();
 							PushTransparent(Transparent || !(Vars::Misc::Movement::NavBot::Blacklist.Value & Vars::Misc::Movement::NavBot::BlacklistEnum::DormantThreats));
 							{
 								FSlider(Vars::Misc::Movement::NavBot::BlacklistDormantDelay, FSliderEnum::Right);
+								FTooltip("Delay (s) between scans for dormant threats to blacklist.");
 							}
 							PopTransparent();
 							PushTransparent(Transparent || !(Vars::Misc::Movement::NavBot::Blacklist.Value & Vars::Misc::Movement::NavBot::BlacklistEnum::NormalThreats)
 											&& !(Vars::Misc::Movement::NavBot::Blacklist.Value & Vars::Misc::Movement::NavBot::BlacklistEnum::DormantThreats));
 							{
 								FSlider(Vars::Misc::Movement::NavBot::BlacklistSlightDangerLimit);
+								FTooltip("Max number of slight-danger zones to blacklist simultaneously.");
 							}
 							PopTransparent();
 							FSlider(Vars::Misc::Movement::NavBot::MeleeTargetRange);
+							FTooltip("Range at which the navbot targets enemies using melee weapons.");
 							FToggleSlider(Vars::Misc::Movement::NavBot::DangerOverlay, Vars::Misc::Movement::NavBot::DangerOverlayMaxDist);
+							FTooltip("Draw danger zone overlays on screen up to the given distance.");
 						}
 						PopTransparent();
 					}
@@ -1630,16 +1878,20 @@ void CMenu::MenuMisc(int iTab)
 				if (Section("Followbot"))
 				{
 					FToggle(Vars::Misc::Movement::FollowBot::Enabled);
+					FTooltip("Follow a target player automatically using pathfinding.");
 					PushTransparent(!Vars::Misc::Movement::NavEngine::Enabled.Value);
 						FDropdown(Vars::Misc::Movement::FollowBot::UseNav, FDropdownEnum::Left);
 						FTooltip("Use nav engine when unable to reach current target.\nNormal - runs in case the target is NOT dormant\nNormal + Dormant - runs regardless of dormancy\nNOTE:\n'+ Dormant' does not make the followbot target players across the whole map. \nIt only prevents followbot from losing current target in case it goes dormant");
 					PopTransparent();
 					FDropdown(Vars::Misc::Movement::FollowBot::Targets, FDropdownEnum::Right);
+					FTooltip("Who the followbot will follow (teammates, enemies, or both).");
 					FDropdown(Vars::Misc::Movement::FollowBot::LookAtPath, FDropdownEnum::Left);
+					FTooltip("Look towards the next path node while following (Off/Plain/Silent).");
 					PushTransparent(!Vars::Misc::Movement::FollowBot::LookAtPath.Value);
 						FDropdown(Vars::Misc::Movement::FollowBot::LookAtPathMode, FDropdownEnum::Right);
 						FTooltip("Look at path mode:\nPath - look at current path node.\nCopy - use saved target viewangles.\nCopy immediate - use current target viewangles.\nAt target - look at current target.");
 						FToggle(Vars::Misc::Movement::FollowBot::LookAtPathNoSnap);
+						FTooltip("Smooth view angle transitions to avoid snapping when path changes.");
 					PopTransparent();
 					FSlider(Vars::Misc::Movement::FollowBot::MaxNodes, FSliderEnum::Left);
 					FTooltip("Allowed amount of path nodes.\nExceeding that abandons the target.");
@@ -1656,6 +1908,7 @@ void CMenu::MenuMisc(int iTab)
 						FTooltip("Distance at which followbot abandons the target completely.");
 					PopTransparent();
 					FToggle(Vars::Misc::Movement::FollowBot::DrawPath, FToggleEnum::Left);
+					FTooltip("Visualize the followbot's current path on screen.");
 					FColorPicker(Vars::Colors::FollowbotPathLine, FColorPickerEnum::SameLine);
 					FColorPicker(Vars::Colors::FollowbotPathBox, FColorPickerEnum::SameLine);
 				} EndSection();
@@ -1666,21 +1919,29 @@ void CMenu::MenuMisc(int iTab)
 						FSlider(Vars::Misc::Movement::BotUtils::LookAtPathSpeed, FSliderEnum::None);
 						FTooltip("Specifies how smooth the viewangles will change when using 'Look at path' in nav engine or followbot");
 						FToggle(Vars::Misc::Movement::BotUtils::LookAtPathDebug);
+						FTooltip("Draw debug info for Look at path viewangle smoothing.");
 					}
 					PopTransparent();
 					FToggle(Vars::Misc::Automation::RandomClass, FToggleEnum::Right);
+					FTooltip("Randomly switch class at the given interval.");
 					PushTransparent(!Vars::Misc::Automation::RandomClass.Value);
 					{
 						FDropdown(Vars::Misc::Automation::RandomClassExclude, FDropdownEnum::Multi);
+						FTooltip("Classes to exclude from the random class selection pool.");
 						FSlider(Vars::Misc::Automation::RandomClassInterval, FSliderEnum::None);
+						FTooltip("Interval (s) between random class changes.");
 					}
 					PopTransparent();
 					FDropdown(Vars::Misc::Automation::ForceClass, { "Off", "Scout", "Soldier", "Pyro", "Demoman", "Heavy", "Engineer", "Medic", "Sniper", "Spy" }, {0,1,3,7,4,6,9,5,2,8}, FDropdownEnum::Left);
+					FTooltip("Force the bot to always play as this class.");
 					FDropdown(Vars::Misc::Movement::BotUtils::WeaponSlot, FDropdownEnum::Right);
+					FTooltip("Force the bot to always use the weapon in this slot.");
 					FDropdown(Vars::Misc::Movement::BotUtils::AutoScope);
+					FTooltip("Automatically scope in as Sniper when a target is in range (Simple or MoveSim).");
 					PushTransparent(!Vars::Misc::Movement::BotUtils::AutoScope.Value);
 					{
 						FSlider(Vars::Misc::Movement::BotUtils::AutoScopeCancelTime, FSliderEnum::None);
+						FTooltip("Cancel autoscope after this many seconds without landing a shot.");
 					}
 					PopTransparent();
 				} EndSection();
@@ -1705,43 +1966,70 @@ void CMenu::MenuMisc(int iTab)
 				if (Section("Queueing", 8))
 				{
 					FDropdown(Vars::Misc::Queueing::ForceRegions);
+					FTooltip("Force matchmaking to only search specific server regions.");
 					FToggle(Vars::Misc::Queueing::ExtendQueue, FToggleEnum::Left);
+					FTooltip("Extend casual queue search to include more maps.");
 					FToggle(Vars::Misc::Queueing::AutoCasualQueue, FToggleEnum::Right);
+					FTooltip("Automatically re-queue for casual matchmaking after a match ends.");
 					FToggle(Vars::Misc::Queueing::AutoCasualJoin, FToggleEnum::Left);
+					FTooltip("Automatically accept and join casual matches when found.");
 					FToggle(Vars::Misc::Queueing::MapPopularizing, FToggleEnum::Right);
+					FTooltip("Vote for specific maps to influence the casual map pool.");
 		            FToggle(Vars::Misc::Queueing::AutoMannUpQueue, FToggleEnum::Left);
+					FTooltip("Automatically queue for MvM Mann Up missions.");
 					FToggle(Vars::Misc::Queueing::MapBarBoost, FToggleEnum::Right);
+					FTooltip("Boost map vote bars to influence map selection.");
 					PushTransparent(!Vars::Misc::Queueing::AutoCasualQueue.Value);
 					{
 						FToggle(Vars::Misc::Queueing::AutoAbandonIfNoNavmesh);
+						FTooltip("Abandon and re-queue if the current map has no navigation mesh.");
 						FToggleSlider(Vars::Misc::Queueing::AutoDumpProfiles, Vars::Misc::Queueing::AutoDumpDelay);
+						FTooltip("Periodically dump player profile data from the current match.");
 					}
 					PopTransparent();
 					FSlider(Vars::Misc::Queueing::QueueDelay, FSliderEnum::None);
+					FTooltip("Delay (s) before re-queuing after a match ends.");
 					FToggle(Vars::Misc::Queueing::RQif, FToggleEnum::Left);
+					FTooltip("Automatically reconnect or rejoin if player count conditions are met.");
 					PushTransparent(!Vars::Misc::Queueing::RQif.Value);
 					{
 						FSlider(Vars::Misc::Queueing::RQplt);
+						FTooltip("Trigger RQ if player count is less than this threshold.");
 						FSlider(Vars::Misc::Queueing::RQpgt);
+						FTooltip("Trigger RQ if player count is greater than this threshold.");
 						FToggle(Vars::Misc::Queueing::RQkick, FToggleEnum::Left);
+						FTooltip("Try to kick cheaters before leaving the server.");
 						FToggle(Vars::Misc::Queueing::RQnoAbandon, FToggleEnum::Right);
+						FTooltip("Leave the match without abandoning (avoid abandon penalty).");
 						FToggle(Vars::Misc::Queueing::RQIgnoreFriends, FToggleEnum::Left);
+						FTooltip("Ignore friends when evaluating RQ conditions.");
 						FToggle(Vars::Misc::Queueing::RQLTM, FToggleEnum::Right);
+						FTooltip("Only trigger RQ if your score is less than the threshold.");
 					}
 					PopTransparent();
 
 					FToggle(Vars::Misc::Queueing::AutoCommunityQueue, FToggleEnum::Left);
+					FTooltip("Automatically search and join community servers based on the filter criteria below.");
 					PushTransparent(!Vars::Misc::Queueing::AutoCommunityQueue.Value);
 					{
 						FSlider(Vars::Misc::Queueing::ServerSearchDelay, FSliderEnum::Left);
+						FTooltip("Delay (s) between community server search attempts.");
 						FSlider(Vars::Misc::Queueing::MaxTimeOnServer, FSliderEnum::Right);
+						FTooltip("Max time (s) to stay on one server before searching for a new one.");
 						FSlider(Vars::Misc::Queueing::MinPlayersOnServer, FSliderEnum::Left);
+						FTooltip("Minimum number of players required on the server to join.");
 						FSlider(Vars::Misc::Queueing::MaxPlayersOnServer, FSliderEnum::Right);
+						FTooltip("Maximum number of players allowed on the server.");
 						FToggle(Vars::Misc::Queueing::RequireNavmesh, FToggleEnum::Left);
+						FTooltip("Only join servers whose map has a navigation mesh available.");
 						FToggle(Vars::Misc::Queueing::AvoidPasswordServers, FToggleEnum::Right);
+						FTooltip("Skip password-protected servers.");
 						FToggle(Vars::Misc::Queueing::OnlyNonDedicatedServers, FToggleEnum::Left);
+						FTooltip("Only join listen/LAN servers (not dedicated servers).");
 						FToggle(Vars::Misc::Queueing::OnlySteamNetworkingIPs, FToggleEnum::Right);
+						FTooltip("Only join servers using Steam networking IPs.");
 						FToggle(Vars::Misc::Queueing::PreferSteamNickServers, FToggleEnum::Left);
+						FTooltip("Prefer servers hosted by players in your Steam contacts.");
 					}
 					PopTransparent();
 				} EndSection();
@@ -1750,38 +2038,57 @@ void CMenu::MenuMisc(int iTab)
 					FDropdown(Vars::Misc::Automation::AutoItem::Enable);
 					FTooltip("Allows you to automatically rent and craft items, very useful for bots.");
 					FSlider(Vars::Misc::Automation::AutoItem::Interval);
+					FTooltip("Interval (s) between auto-item rent/craft checks.");
 					FSDropdown(Vars::Misc::Automation::AutoItem::Primary, FDropdownEnum::Left);
+					FTooltip("Primary weapon to equip automatically.");
 					FSDropdown(Vars::Misc::Automation::AutoItem::FirstHat, FDropdownEnum::Right);
+					FTooltip("First cosmetic slot item to equip automatically.");
 					FSDropdown(Vars::Misc::Automation::AutoItem::Secondary, FDropdownEnum::Left);
+					FTooltip("Secondary weapon to equip automatically.");
 					FSDropdown(Vars::Misc::Automation::AutoItem::SecondHat, FDropdownEnum::Right);
+					FTooltip("Second cosmetic slot item to equip automatically.");
 					FSDropdown(Vars::Misc::Automation::AutoItem::Melee, FDropdownEnum::Left);
+					FTooltip("Melee weapon to equip automatically.");
 					FSDropdown(Vars::Misc::Automation::AutoItem::ThirdHat, FDropdownEnum::Right);
+					FTooltip("Third cosmetic slot item to equip automatically.");
 				} EndSection();
 				if (Section("Chat", 8))
 				{
 					FToggleSlider(Vars::Misc::Automation::ChatSpam::Enable, Vars::Misc::Automation::ChatSpam::Interval, FSliderEnum::Clamp);
+					FTooltip("Spam messages from your chat list at the given interval (s).");
 					PushTransparent(!Vars::Misc::Automation::ChatSpam::Enable.Value);
 					{
 						FToggle(Vars::Misc::Automation::ChatSpam::TeamChat, FToggleEnum::Left);
+						FTooltip("Send chat spam to team chat only instead of all chat.");
 						FToggle(Vars::Misc::Automation::ChatSpam::Randomize, FToggleEnum::Right);
+						FTooltip("Randomize the order of messages from the chat list.");
 					}
 					PopTransparent();
 					FToggle(Vars::Misc::Automation::ChatSpam::AutoReply, FToggleEnum::Left);
+					FTooltip("Automatically reply when someone messages you in chat.");
 					FToggle(Vars::Misc::Automation::ChatSpam::ChatRelay, FToggleEnum::Right);
+					FTooltip("Relay chat messages from connected accounts to this one.");
 					FToggle(Vars::Misc::Automation::ChatSpam::VoteKickReply, FToggleEnum::Left);
+					FTooltip("Automatically post a reply message when a vote kick is called.");
 					FDropdown(Vars::Misc::Automation::VoiceCommandSpam);
+					FTooltip("Automatically spam a voice command at intervals.");
 					FToggle(Vars::Misc::Automation::Micspam, FToggleEnum::Left);
+					FTooltip("Play audio through your microphone input in-game.");
 					FToggle(Vars::Misc::Automation::AchievementSpam, FToggleEnum::Right);
+					FTooltip("Broadcast fake achievement notifications in chat.");
 					PushTransparent(!Vars::Misc::Automation::AchievementSpam.Value);
 					{
 						FDropdown(
 							Vars::Misc::Automation::AchievementSpamID,
 							Vars::Misc::Automation::GetAchievementSpamDropdownEntries(),
 							Vars::Misc::Automation::GetAchievementSpamDropdownIDs());
+						FTooltip("Select which achievement to broadcast.");
 					}
 					PopTransparent();
 					FToggle(Vars::Misc::Automation::NoiseSpam, FToggleEnum::Left);
+					FTooltip("Spam miscellaneous noise sounds in the game.");
 					FToggle(Vars::Misc::Automation::CallVoteSpam, FToggleEnum::Right);
+					FTooltip("Spam call vote notifications to the server.");
 					// if (FButton("HELP", FButtonEnum::Left, { 0, 24 }))
 					// 	ShellExecuteA(NULL, "open", (F::Configs.m_sConfigPath + "chathelp.txt").c_str(), NULL, NULL, SW_SHOWNORMAL);
 					// if (FButton("OPEN FOLDER", FButtonEnum::Right, { 0, 24 }, 0, nullptr, nullptr))
@@ -2143,33 +2450,43 @@ void CMenu::MenuAnticheat(int iTab)
 		if (Section("Cheater Detection"))
 		{
 			FDropdown(Vars::CheaterDetection::Methods);
+			FTooltip("Detection methods used to identify cheating players (pitch, packet choke, flick, etc.).");
 			PushTransparent(!Vars::CheaterDetection::DetectionsRequired.Value);
 			{
 				FSlider(Vars::CheaterDetection::DetectionsRequired);
+				FTooltip("Number of individual detections before automatically marking a player as a cheater.");
 			}
 			PopTransparent();
 			PushTransparent(!(Vars::CheaterDetection::Methods.Value & Vars::CheaterDetection::MethodsEnum::PacketChoking));
 			{
 				FSlider(Vars::CheaterDetection::MinimumChoking);
+				FTooltip("Minimum consecutive packets a player must choke to flag as suspicious.");
 			}
 			PopTransparent();
 			PushTransparent(!(Vars::CheaterDetection::Methods.Value & Vars::CheaterDetection::MethodsEnum::AimFlicking));
 			{
 				FSlider(Vars::CheaterDetection::MinimumFlick, FSliderEnum::Left);
+				FTooltip("Minimum view angle flick size (degrees) to consider as aim-assist evidence.");
 				FSlider(Vars::CheaterDetection::MaximumNoise, FSliderEnum::Right);
+				FTooltip("Max angle noise allowed around a flick before it is dismissed.");
 			}
 			PopTransparent();
 			PushTransparent(!(Vars::CheaterDetection::Methods.Value & Vars::CheaterDetection::MethodsEnum::LagCompAbuse));
 			{
 				FSlider(Vars::CheaterDetection::LagCompMinimumDelta, FSliderEnum::Left);
+				FTooltip("Minimum tick delta to count as a lag compensation abuse event.");
 				FSlider(Vars::CheaterDetection::LagCompBurstCount, FSliderEnum::Right);
+				FTooltip("Number of lag burst events required to flag as lag comp abuse.");
 				FSlider(Vars::CheaterDetection::LagCompWindow);
+				FTooltip("Time window (s) within which lag burst events must occur.");
 			}
 			PopTransparent();
 			PushTransparent(!(Vars::CheaterDetection::Methods.Value & Vars::CheaterDetection::MethodsEnum::CritManipulation));
 			{
 				FSlider(Vars::CheaterDetection::CritWindow, FSliderEnum::Left);
+				FTooltip("Number of recent crits to sample for crit rate analysis.");
 				FSlider(Vars::CheaterDetection::CritThreshold, FSliderEnum::Right);
+				FTooltip("Crit rate (%) above which a player is flagged for crit manipulation.");
 			}
 			PopTransparent();
 		}
@@ -3482,16 +3799,19 @@ void CMenu::MenuSettings(int iTab)
 			if (BeginWidgetTable(0, vTable))
 			{
 				FToggle(Vars::Menu::BindWindow);
+				FTooltip("Show the bind display window on screen.");
 			} EndChild();
 
 			if (BeginWidgetTable(1, vTable))
 			{
 				FToggle(Vars::Menu::BindWindowTitle);
+				FTooltip("Show the title bar on the bind display window.");
 			} EndChild();
 
 			if (BeginWidgetTable(2, vTable))
 			{
 				FToggle(Vars::Menu::MenuShowsBinds);
+				FTooltip("Display bind key names next to settings in the menu.");
 			} EndChild();
 		} EndSection();
 		if (Section("Binds"))
