@@ -28,7 +28,7 @@ MAKE_HOOK(IEngineVGui_Paint, U::Memory.GetVirtual(I::EngineVGui, 14), void,
 
 	CALL_ORIGINAL(rcx, iMode);
 
-	if (iMode & PAINT_INGAMEPANELS && !SDK::CleanScreenshot() && !Vars::Menu::Streamproof.Value)
+	if (iMode & PAINT_INGAMEPANELS && !SDK::CleanScreenshot())
 	{
 		H::Draw.UpdateScreenSize();
 		H::Draw.UpdateW2SMatrix();
@@ -58,7 +58,7 @@ MAKE_HOOK(IEngineVGui_Paint, U::Memory.GetVirtual(I::EngineVGui, 14), void,
 		H::Draw.End();
 	}
 
-	if (iMode & PAINT_UIPANELS && !SDK::CleanScreenshot() && !Vars::Menu::Streamproof.Value)
+	if (iMode & PAINT_UIPANELS && !SDK::CleanScreenshot())
 	{
 		H::Draw.UpdateScreenSize();
 		H::Draw.Start();
