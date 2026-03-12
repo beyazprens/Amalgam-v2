@@ -33,9 +33,16 @@ static inline bool IsLethalProjectile(CBaseEntity* pProjectile, CTFPlayer* pLoca
 		flDamage = pProjectile->As<CBaseGrenade>()->m_flDamage();
 		bCritical = pProjectile->As<CTFWeaponBaseGrenadeProj>()->m_bCritical();
 		break;
+	case ETFClassID::CTFProjectile_Flare:
+		flDamage = pWeapon ? pWeapon->GetDamage() : 30.f;
+		bCritical = pProjectile->As<CTFProjectile_Flare>()->m_bCritical();
+		break;
+	case ETFClassID::CTFProjectile_Arrow:
+		flDamage = pWeapon ? pWeapon->GetDamage() : 50.f;
+		bCritical = pProjectile->As<CTFProjectile_Arrow>()->m_bCritical();
+		break;
 	default:
-		// Unknown projectile type - treat as potentially lethal
-		return true;
+		return false;
 	}
 
 	if (bCritical)

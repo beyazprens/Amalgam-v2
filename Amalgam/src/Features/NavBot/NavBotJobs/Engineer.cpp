@@ -166,17 +166,23 @@ bool CNavBotEngineer::SmackBuilding(CUserCmd* pCmd, CTFPlayer* pLocal, CBaseObje
 
 	m_eTaskStage = pBuilding->GetClassID() == ETFClassID::CObjectDispenser ? EngineerTaskStageEnum::SmackDispenser : EngineerTaskStageEnum::SmackSentry;
 
-	if (pBuilding->GetAbsOrigin().DistTo(pLocal->GetAbsOrigin()) <= 100.f && F::BotUtils.m_iCurrentSlot == SLOT_MELEE)
+	const float flDist = pBuilding->GetAbsOrigin().DistTo(pLocal->GetAbsOrigin());
+	const Vec3 vAngleTo = Math::CalcAngle(pLocal->GetEyePosition(), pBuilding->GetCenter());
+	const float flFOV = Math::CalcFov(pCmd->viewangles, vAngleTo);
+
+	// If building is within melee range and melee is equipped, attack without overriding viewangles
+	if (flDist <= 100.f && F::BotUtils.m_iCurrentSlot == SLOT_MELEE)
 	{
-		if (G::Attacking == 1)
-		{
-			pCmd->viewangles = Math::CalcAngle(pLocal->GetEyePosition(), pBuilding->GetCenter());
-			I::EngineClient->SetViewAngles(pCmd->viewangles);
-		}
-		else
-			pCmd->buttons |= IN_ATTACK;
+		pCmd->buttons |= IN_ATTACK;
+		return true;
 	}
-	else if (F::NavEngine.m_eCurrentPriority != PriorityListEnum::Engineer)
+
+	// Building is in FOV – don't navigate, let the player reach it naturally (AimbotMelee handles the attack)
+	if (flFOV <= Vars::Aimbot::General::AimFOV.Value)
+		return true;
+
+	// Building is not in FOV – navigate to it
+	if (F::NavEngine.m_eCurrentPriority != PriorityListEnum::Engineer)
 		return F::NavEngine.NavTo(pBuilding->GetAbsOrigin(), PriorityListEnum::Engineer);
 
 	return true;
