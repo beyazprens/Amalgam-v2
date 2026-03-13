@@ -564,7 +564,21 @@ bool CEntities::IsSpellbook(uint32_t uHash)
 }
 
 CTFPlayer* CEntities::GetLocal() { return m_pLocal; }
-CTFWeaponBase* CEntities::GetWeapon() { return m_pLocalWeapon; }
+CTFWeaponBase* CEntities::GetWeapon()
+{
+	if (!m_pLocal)
+		return m_pLocalWeapon = nullptr;
+
+	const auto hWeapon = m_pLocal->m_hActiveWeapon();
+	if (!hWeapon.IsValid())
+		return m_pLocalWeapon = nullptr;
+
+	auto pWeapon = hWeapon.Get()->As<CTFWeaponBase>();
+	if (!pWeapon || pWeapon->m_hOwnerEntity().Get() != m_pLocal)
+		return m_pLocalWeapon = nullptr;
+
+	return m_pLocalWeapon = pWeapon;
+}
 CTFPlayerResource* CEntities::GetResource() { return m_pPlayerResource; }
 CBaseTeamObjectiveResource* CEntities::GetObjectiveResource( ) { return m_pObjectiveResource; }
 
