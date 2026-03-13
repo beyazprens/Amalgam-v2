@@ -1225,7 +1225,7 @@ I dont think this is a good idea to disable simulations completely:
 			CVar(AutoCasualJoin, "Auto casual join", false);
 			CVar(MapPopularizing, "Map popularizing mode", false);
 			CVar(MapBarBoost, "Boost Playercount Visualizer", false);
-			CVar(AutoAbandonIfNoNavmesh, "Auto abandon if no navmesh", true);
+			CVar(AutoAbandonIfNoNavmesh, "Auto abandon if no navmesh", false);
 			CVar(AutoDumpProfiles, "Auto dump profiles", false);
 			CVar(AutoDumpDelay, "Auto dump delay", 15, SLIDER_CLAMP, 0, 120, 1, "%is");
 			CVar(QueueDelay, "Queue delay", 5, SLIDER_MIN, 0, 10, 1, "%im");
