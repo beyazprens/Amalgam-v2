@@ -5,7 +5,6 @@
 #include "../../Ticks/Ticks.h"
 #include "../AutoAirblast/AutoAirblast.h"
 #include "../AutoHeal/AutoHeal.h"
-#include "../../NavBot/BotUtils.h"
 
 //#define SPLASH_DEBUG1 // normal splash visualization
 //#define SPLASH_DEBUG2 // obstructed splash visualization
@@ -1311,8 +1310,7 @@ bool CAimbotProjectile::TestAngle(const Vec3& vPoint, const Vec3& vAngles, int i
 
 				// attempted to have a headshot check though this seems more detrimental than useful outside of smooth aimbot
 				if (tTarget.m_nAimedHitbox == HITBOX_HEAD && !bSecondTest &&
-					(Vars::Aimbot::General::AimType.Value == Vars::Aimbot::General::AimTypeEnum::Smooth
-					|| Vars::Aimbot::General::AimType.Value == Vars::Aimbot::General::AimTypeEnum::SmoothVelocity
+					(Vars::Aimbot::General::AimType.Value == Vars::Aimbot::General::AimTypeEnum::SmoothVelocity
 					|| Vars::Aimbot::General::AimType.Value == Vars::Aimbot::General::AimTypeEnum::Assistive))
 				{	// loop and see if closest hitbox is head
 					auto pHitboxInfos = F::Backtrack.GetHitboxInfos(tTarget.m_pEntity);
@@ -1380,10 +1378,6 @@ bool CAimbotProjectile::HandlePoint(const Vec3& vOrigin, int iSimTime, float flP
 	{
 		switch (Vars::Aimbot::General::AimType.Value)
 		{
-		case Vars::Aimbot::General::AimTypeEnum::Smooth:
-			if (Vars::Aimbot::General::AssistStrength.Value == 100.f)
-				break;
-			[[fallthrough]];
 		case Vars::Aimbot::General::AimTypeEnum::SmoothVelocity:
 		case Vars::Aimbot::General::AimTypeEnum::Assistive:
 		{
@@ -1654,28 +1648,30 @@ bool CAimbotProjectile::Aim(const Vec3& vCurAngle, const Vec3& vToAngle, Vec3& v
 	bool bReturn = false;
 	switch (m_iMethod)
 	{
-	case Vars::Aimbot::General::AimTypeEnum::Plain:
 	case Vars::Aimbot::General::AimTypeEnum::Silent:
-	case Vars::Aimbot::General::AimTypeEnum::Locking:
 		vOut = vToAngle;
 		break;
-	case Vars::Aimbot::General::AimTypeEnum::Legit:
-		vOut = vCurAngle;
-		bReturn = true;
-		break;
-	case Vars::Aimbot::General::AimTypeEnum::Smooth:
 	case Vars::Aimbot::General::AimTypeEnum::SmoothVelocity:
 		vOut = vCurAngle.LerpAngle(vToAngle, F::Aimbot.GetSmoothStrength(vCurAngle, vToAngle));
 		bReturn = true;
 		break;
 	case Vars::Aimbot::General::AimTypeEnum::Assistive:
+	{
 		Vec3 vMouseDelta = G::CurrentUserCmd->viewangles.DeltaAngle(G::LastUserCmd->viewangles);
 		Vec3 vTargetDelta = vToAngle.DeltaAngle(G::LastUserCmd->viewangles);
-		float flMouseDelta = vMouseDelta.Length2D(), flTargetDelta = vTargetDelta.Length2D();
-		vTargetDelta = vTargetDelta.Normalized() * std::min(flMouseDelta, flTargetDelta);
-		vOut = vCurAngle - vMouseDelta + vMouseDelta.LerpAngle(vTargetDelta, F::Aimbot.GetSmoothStrength(vCurAngle, vToAngle));
+		float flMouseLen = vMouseDelta.Length2D();
+		float flTargetLen = vTargetDelta.Length2D();
+		float flStrength = F::Aimbot.GetSmoothStrength(vCurAngle, vToAngle);
+		float flDotApprox = (flMouseLen > 0.001f && flTargetLen > 0.001f)
+			? (vMouseDelta.x * vTargetDelta.x + vMouseDelta.y * vTargetDelta.y) / (flMouseLen * flTargetLen)
+			: 0.f;
+		float flAssistScale = std::clamp((flDotApprox + 1.f) * 0.5f, 0.f, 1.f);
+		Vec3 vAdjustedDelta = vTargetDelta.Normalized() * std::min(flMouseLen * (1.f + flAssistScale * 0.5f), flTargetLen);
+		vOut = vCurAngle - vMouseDelta + vMouseDelta.LerpAngle(vAdjustedDelta, flStrength);
+		Math::ClampAngles(vOut);
 		bReturn = true;
 		break;
+	}
 	}
 
 	Math::ClampAngles(vOut);
@@ -1688,12 +1684,7 @@ void CAimbotProjectile::Aim(CUserCmd* pCmd, Vec3& vAngle)
 	bool bUnsure = F::Ticks.IsTimingUnsure();
 	switch (m_iMethod)
 	{
-	case Vars::Aimbot::General::AimTypeEnum::Plain:
-		if (G::Attacking != 1 && !bUnsure)
-			break;
-		[[fallthrough]];
-	case Vars::Aimbot::General::AimTypeEnum::Smooth:
-		case Vars::Aimbot::General::AimTypeEnum::SmoothVelocity:
+	case Vars::Aimbot::General::AimTypeEnum::SmoothVelocity:
 	case Vars::Aimbot::General::AimTypeEnum::Assistive:
 		SDK::FixMovement(pCmd, vAngle);
 		pCmd->viewangles = vAngle;
@@ -1707,26 +1698,6 @@ void CAimbotProjectile::Aim(CUserCmd* pCmd, Vec3& vAngle)
 			G::PSilentAngles = true;
 		}
 		break;
-	case Vars::Aimbot::General::AimTypeEnum::Legit:
-	{
-		auto pLocal = H::Entities.GetLocal();
-		if (pLocal && G::AimPoint.m_iTickCount == I::GlobalVars->tickcount)
-		{
-			F::BotUtils.LookLegit(pLocal, pCmd, G::AimPoint.m_vOrigin, false);
-			vAngle = pCmd->viewangles;
-			if (G::AimbotSteering)
-				return;
-			Vec3 vOldView = I::EngineClient->GetViewAngles();
-			Vec3 vDelta = vAngle.DeltaAngle(vOldView);
-			if (std::fabs(vDelta.x) > 0.01f || std::fabs(vDelta.y) > 0.01f || std::fabs(vDelta.z) > 0.01f)
-				G::AimbotSteering = true;
-		}
-		break;
-	}
-	case Vars::Aimbot::General::AimTypeEnum::Locking:
-		SDK::FixMovement(pCmd, vAngle);
-		pCmd->viewangles = vAngle;
-		G::SilentAngles = true;
 	}
 }
 
@@ -2125,7 +2096,7 @@ void CAimbotProjectile::RunGrapplingHook(CTFPlayer* pLocal, CTFWeaponBase* pWeap
 	if (vTargets.empty()) return;
 
 	m_iWeaponID = TF_WEAPON_GRAPPLINGHOOK;
-	m_iMethod = Vars::Aimbot::General::AimTypeEnum::Plain;
+	m_iMethod = Vars::Aimbot::General::AimTypeEnum::Silent;
 
 	auto vShootPos = pLocal->GetShootPos();
 	for (auto& tTarget : vTargets)

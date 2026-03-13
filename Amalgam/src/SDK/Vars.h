@@ -196,7 +196,6 @@ NAMESPACE_BEGIN(Vars)
 		CVar(PingDisplay, "Ping display", DragBox_t(), VISUAL | NOBIND);
 		CVar(ConditionsDisplay, "Conditions display", DragBox_t(), VISUAL | NOBIND);
 		CVar(SeedPredictionDisplay, "Seed prediction display", DragBox_t(), VISUAL | NOBIND);
-		CVar(NavBotDisplay, "Navbot display", DragBox_t(), VISUAL | NOBIND);
 
 		CVar(Scale, "Scale", 1.f, NOBIND | SLIDER_MIN | SLIDER_PRECISION | SLIDER_NOAUTOUPDATE, 0.75f, 2.f, 0.25f);
 		CVar(CheapText, "Cheap text", false);
@@ -281,8 +280,8 @@ NAMESPACE_BEGIN(Vars)
 	NAMESPACE_BEGIN(Aimbot)
 		NAMESPACE_BEGIN(General, Aimbot)
 			CVarEnum(AimType, "Aim type", 0, NONE, nullptr,
-				VA_LIST("Off", "Plain", "Smooth", "Silent", "Locking", "Assistive", "Legit", "SmoothVelocity"),
-				Off, Plain, Smooth, Silent, Locking, Assistive, Legit, SmoothVelocity);
+				VA_LIST("Off", "Assistive", "SmoothVelocity", "Silent"),
+				Off, Assistive, SmoothVelocity, Silent);
 			CVarEnum(TargetSelection, "Target selection", 0, NONE, nullptr,
 				VA_LIST("FOV", "Distance", "Hybrid"),
 				FOV, Distance, Hybrid);
@@ -308,8 +307,6 @@ NAMESPACE_BEGIN(Vars)
 			CVar(AutoShoot, "Auto shoot", true);
 			CVar(FOVCircle, "FOV Circle", true, VISUAL);
 			CVar(NoSpread, "No spread", false);
-			CVar(PrioritizeNavbot, "Prioritize navbot target", false);
-			CVar(PrioritizeFollowbot, "Prioritize followbot target", false);
 
 			CVarEnum(AimHoldsFire, "Aim holds fire", 2, NOSAVE | DEBUGVAR, nullptr,
 				VA_LIST("False", "Minigun only", "Always"),
@@ -825,75 +822,8 @@ I dont think this is a good idea to disable simulations completely:
 				CVar(VischeckCacheTime, "Vischeck cache time", 90, SLIDER_MIN, 10, 500, 10, "%is");
 			NAMESPACE_END(NavEngine)
 
-			NAMESPACE_BEGIN(BotUtils)
-				CVar(LookAtPathSpeed, "Look at path speed", 25, SLIDER_CLAMP, 0, 120);
-				CVarEnum(WeaponSlot, "Force weapon", 0, NONE, nullptr,
-					VA_LIST("Off", "Best", "Primary", "Secondary", "Melee", "PDA"),
-					Off, Best, Primary, Secondary, Melee, PDA);
-			
-				CVarEnum(AutoScope, "Auto scope", 0, NONE, nullptr,
-					VA_LIST("Off", "Simple", "MoveSim"),
-					Off, Simple, MoveSim);
-				CVar(AutoScopeCancelTime, "Auto scope cancel time", 3, SLIDER_MIN, 1, 5, 1, "%is");
-				CVar(AutoScopeUseCachedResults, "Auto scope use cached results", true, NOSAVE | DEBUGVAR);
-				CVar(LookAtPathDebug, "Look at path debug", false, NOSAVE | DEBUGVAR);
-			NAMESPACE_END(BotUtils)
 
-			NAMESPACE_BEGIN(NavBot)
-				CVar(Enabled, VA_LIST("Enabled", "Navbot enabled"), false);
-				CVarEnum(Blacklist, "Blacklist", 0b0101111, DROPDOWN_MULTI, "None",
-					VA_LIST("Normal threats", "Dormant threats", "##Divider", "Players", "Stickies", "Projectiles", "Sentries"),
-					NormalThreats = 1 << 0, DormantThreats = 1 << 1, Players = 1 << 2, Stickies = 1 << 3, Projectiles = 1 << 4, Sentries = 1 << 5);
 
-				CVar(BlacklistDelay, "Blacklist normal scan delay", 0.5f, SLIDER_MIN, 0.1f, 1.f, 0.1f, "%gs");
-				CVar(BlacklistDormantDelay, "Blacklist dormant scan delay", 1.f, SLIDER_MIN, 0.5f, 5.f, 0.5f, "%gs");
-				CVar(BlacklistSlightDangerLimit, "Blacklist slight danger limit", 2, SLIDER_MIN, 1, 10);
-
-				CVar(SmartJump, "Smart jump", false);
-
-				CVarEnum(RechargeDT, "Recharge DT", 0, NONE, nullptr,
-					VA_LIST("Off", "On", "If not fakelagging"),
-					Off, Always, WaitForFL);
-				CVar(RechargeDTDelay, "Recharge DT delay", 5, SLIDER_MIN, 0, 10, 1, "%is");
-
-				CVarEnum(Preferences, "Preferences", 0b0, DROPDOWN_MULTI, nullptr,
-					VA_LIST("Get health", "Get ammo", "Reload weapons", "Stalk enemies", "Defend objectives", "Capture objectives", "Help capture objectives", "Escape danger", "Safe capping", "Target sentries", "Auto engie", "##Divider", "Target sentries low range", "Help capture objective friend only", "Dont escape danger with intel", "Group with others"),
-					SearchHealth = 1 << 0, SearchAmmo = 1 << 1, ReloadWeapons = 1 << 2, StalkEnemies = 1 << 3, DefendObjectives = 1 << 4, CaptureObjectives = 1 << 5, HelpCaptureObjectives = 1 << 6, EscapeDanger = 1 << 7, SafeCapping = 1 << 8, TargetSentries = 1 << 9, AutoEngie = 1 << 10, TargetSentriesLowRange = 1 << 11, HelpFriendlyCaptureObjectives = 1 << 12, DontEscapeDangerIntel = 1 << 13, GroupWithOthers = 1 << 14);
-				CVar(MeleeTargetRange, "Melee target range", 600, NONE, 150, 4000, 50);
-				CVar(DangerOverlay, "Danger overlay", false);
-				CVar(DangerOverlayMaxDist, "Danger overlay max distance", 2000.f, SLIDER_MIN, 500.f, 6000.f, 250.f, "%0.0f");
-
-				CVar(StickyDangerRange, "Sticky danger range", 600, NOSAVE | DEBUGVAR, 50, 1500, 50);
-				CVar(ProjectileDangerRange, "Projectile danger range", 600, NOSAVE | DEBUGVAR, 50, 1500, 50);
-			NAMESPACE_END(NavBot)
-
-			NAMESPACE_BEGIN(FollowBot)
-				CVar(Enabled, VA_LIST("Enabled", "Followbot enabled"), false);
-
-				CVarEnum(UseNav, "Use nav mesh on", 0, NONE, nullptr,
-					VA_LIST("Off", "Normal", "Normal + Dormant"),
-					Off, Normal, Dormant);
-
-				CVarEnum(Targets, "Targets", 0b01, DROPDOWN_MULTI, nullptr,
-					VA_LIST("Teammates", "Enemies"),
-					Teammates = 1 << 0, Enemies = 1 << 1);
-
-				CVarEnum(LookAtPath, "Look at path", 0, NONE, nullptr,
-					VA_LIST("Off", "Plain", "Silent"),
-					Off, Plain, Silent);
-				CVarEnum(LookAtPathMode, "Look at path mode", 0, NONE, nullptr,
-					VA_LIST("Path", "Copy target", "Copy target immediate", "At target"),
-					Path, Copy, CopyImmediate, AtTarget);
-				CVar(LookAtPathNoSnap, "Avoid view snap", false);
-
-				CVar(DrawPath, "Draw path nodes", false);
-				CVar(MinPriority, "Min follow priority", 0, SLIDER_CLAMP, 0, 10);
-				CVar(MaxNodes, "Max path nodes", 300, SLIDER_CLAMP, 50, 500);
-				CVar(ActivationDistance, "Activation distance", 300, SLIDER_CLAMP, 10, 1200);
-				CVar(FollowDistance, "Follow distance", 60, SLIDER_CLAMP, 10, 150);
-				CVar(AbandonDistance, "Abandon distance", 1500, SLIDER_CLAMP, 250, 1500);
-				CVar(NavAbandonDistance, "Nav abandon distance", 1500, SLIDER_CLAMP, 2000, 8000);
-			NAMESPACE_END(FollowBot)
 
 			CVar(AutoRocketJumpChokeGrounded, "Choke grounded", 1, NOSAVE | DEBUGVAR, 0, 3);
 			CVar(AutoRocketJumpChokeAir, "Choke air", 1, NOSAVE | DEBUGVAR, 0, 3);

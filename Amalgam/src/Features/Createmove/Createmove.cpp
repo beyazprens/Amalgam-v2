@@ -13,11 +13,6 @@
 #include "../Visuals/Visuals.h"
 #include "../Visuals/FakeAngle/FakeAngle.h"
 #include "../Spectate/Spectate.h"
-#include "../NavBot/NavEngine/Controllers/Controller.h"
-#include "../NavBot/NavBotCore.h"
-#include "../NavBot/NavEngine/NavEngine.h"
-#include "../FollowBot/FollowBot.h"
-#include "../AutoJoin/AutoJoin.h"
 #include "../Misc/AutoItem/AutoItem.h"
 #include "../Misc/AutoVote/AutoVote.h"
 
@@ -291,10 +286,8 @@ void CCreateMove::Run(int nSequenceNum, float flInputSampleFrametime, bool bActi
 	F::Spectate.CreateMove(pCmd);
 #endif
 	F::Misc.RunPre(pLocal, pCmd);
-	F::AutoJoin.Run(pLocal);
 	F::AutoItem.Run(pLocal);
 	F::GameObjectiveController.Update();
-	F::BotUtils.Run(pLocal, pWeapon, pCmd);
 	F::AutoVote.Run(pLocal);
 
 	F::Ticks.Start(pLocal, pCmd);
@@ -304,10 +297,6 @@ void CCreateMove::Run(int nSequenceNum, float flInputSampleFrametime, bool bActi
 	}
 	F::Ticks.End(pLocal, pCmd);
 	{
-		F::FollowBot.Run(pLocal, pWeapon, pCmd);
-		F::NavBotCore.Run(pLocal, pWeapon, pCmd);
-		F::NavEngine.Run(pLocal, pWeapon, pCmd);
-		F::BotUtils.HandleSmartJump(pLocal, pCmd);
 		F::CritHack.Run(pLocal, pWeapon, pCmd);
 		F::NoSpread.Run(pLocal, pWeapon, pCmd);
 		F::Resolver.CreateMove();

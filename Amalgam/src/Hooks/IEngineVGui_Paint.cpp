@@ -12,7 +12,6 @@
 #include "../Features/Visuals/OffscreenArrows/OffscreenArrows.h"
 #include "../Features/Visuals/CameraWindow/CameraWindow.h"
 #include "../Features/Visuals/Notifications/Notifications.h"
-#include "../Features/NavBot/NavBotCore.h"
 #include "../Features/Aimbot/AutoHeal/AutoHeal.h"
 #include "../Features/Misc/AutoQueue/AutoQueue.h"
 #include "../Features/Visuals/Chams/Chams.h"
@@ -72,7 +71,6 @@ MAKE_HOOK(IEngineVGui_Paint, U::Memory.GetVirtual(I::EngineVGui, 14), void,
 			F::Backtrack.Draw(pLocal);
 			F::SpectatorList.Draw(pLocal);
 			F::CritHack.Draw(pLocal);
-			F::NavBotCore.Draw(pLocal);
 			F::Ticks.Draw(pLocal);
 			F::Visuals.DrawDebugInfo(pLocal);
 		}
