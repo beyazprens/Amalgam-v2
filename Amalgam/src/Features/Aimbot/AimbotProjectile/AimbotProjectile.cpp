@@ -56,7 +56,16 @@ static inline std::vector<Target_t> GetTargets(CTFPlayer* pLocal, CTFWeaponBase*
 
 			float flFOVTo; Vec3 vPos, vAngleTo;
 			if (!F::AimbotGlobal.PlayerBoneInFOV(pEntity->As<CTFPlayer>(), vLocalPos, vLocalAngles, flFOVTo, vPos, vAngleTo))
-				continue;
+			{
+				// When auto-switch is active, include the healing target even if it's outside aim FOV
+				// so smooth aim types can move the crosshair towards it
+				bool bAutoSwitchHealTarget = bTeam && bHeal && pEntity->entindex() == F::AutoHeal.m_iTargetIdx && F::AutoHeal.m_iAutoSwitch != 0;
+				if (!bAutoSwitchHealTarget)
+					continue;
+				vPos = pEntity->GetCenter();
+				vAngleTo = Math::CalcAngle(vLocalPos, vPos);
+				flFOVTo = Math::CalcFov(vLocalAngles, vAngleTo);
+			}
 
 			float flDistTo = vLocalPos.DistTo(vPos);
 			int iPriority = F::AimbotGlobal.GetPriority(pEntity->entindex());
