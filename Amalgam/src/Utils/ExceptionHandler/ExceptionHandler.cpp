@@ -60,6 +60,9 @@ static inline std::deque<Frame_t> StackTrace(PCONTEXT pContext)
 
 	while (StackWalk64(IMAGE_FILE_MACHINE_AMD64, hProcess, hThread, &tStackFrame, &tContext, nullptr, SymFunctionTableAccess64, SymGetModuleBase64, nullptr))
 	{
+		if (!tStackFrame.AddrPC.Offset || tStackFrame.AddrPC.Offset == UINT64_MAX)
+			continue;
+
 		vTrace.push_back({ .m_uAddress = tStackFrame.AddrPC.Offset });
 		Frame_t& tFrame = vTrace.back();
 
