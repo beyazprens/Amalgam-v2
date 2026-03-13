@@ -2,7 +2,6 @@
 
 #include "../../Core/Core.h"
 #include "../ImGui/Menu/Menu.h"
-#include "../NavBot/NavEngine/NavEngine.h"
 #include "../Configs/Configs.h"
 #include "../Players/PlayerUtils.h"
 #include "../Misc/AutoItem/AutoItem.h"
@@ -108,46 +107,6 @@ static std::unordered_map<uint32_t, CommandCallback> s_mCommands = {
 			return;
 		}
 		F::Configs.LoadConfig(vArgs[0], true);
-	})
-	AddCommand("cat_path_to", 
-	{
-		// Check if the user provided at least 3 args
-		if (vArgs.size() < 3)
-		{
-			SDK::Output("Usage:\n\tcat_path_to <x> <y> <z>");
-			return;
-		}
-
-		Vector vDest;
-		try
-		{	
-			// Get the Vec3
-			vDest = Vec3(atoi(vArgs[0]), atoi(vArgs[1]), atoi(vArgs[2]));
-		}
-		catch (...)
-		{
-			SDK::Output("Usage:\n\tcat_path_to <x> <y> <z>");
-			return;
-		}
-
-		auto pLocal = H::Entities.GetLocal();
-		if (!pLocal || !pLocal->IsAlive())
-		{
-			SDK::Output("cat_path_to", "Local player unavailable");
-			return;
-		}
-
-		F::NavEngine.GetLocalNavArea(pLocal->GetAbsOrigin());
-		F::NavEngine.NavTo(vDest);
-	})
-	AddCommand("cat_cancel_path",
-	{
-		F::NavEngine.CancelPath();
-	})
-	AddCommand("cat_save_nav_mesh", 
-	{
-		if (auto pNavFile = F::NavEngine.GetNavFile())
-			pNavFile->Write();
 	})
 	AddCommand("cat_clearchat", 
 	{

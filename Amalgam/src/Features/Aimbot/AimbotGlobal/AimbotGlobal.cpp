@@ -5,8 +5,6 @@
 #include "../../Misc/NamedPipe/NamedPipe.h"
 #include "../../Ticks/Ticks.h"
 #include "../../EnginePrediction/EnginePrediction.h"
-#include "../../NavBot/NavBotJobs/StayNear.h"
-#include "../../Followbot/Followbot.h"
 
 std::vector<Target_t> CAimbotGlobal::ManageTargets(std::vector<Target_t>(*GetTargets)(CTFPlayer* pLocal, CTFWeaponBase* pWeapon), CTFPlayer* pLocal, CTFWeaponBase* pWeapon,
 	int iMethod, int iMaxTargets)
@@ -14,20 +12,8 @@ std::vector<Target_t> CAimbotGlobal::ManageTargets(std::vector<Target_t>(*GetTar
 	auto vTargets = GetTargets(pLocal, pWeapon);
 	SortTargetsPre(vTargets, iMethod);
 
-	// Prioritize navbot/followbot target
-	int iPriorityIdx = pWeapon->GetSlot() != SLOT_MELEE ? (pWeapon->GetWeaponID() == TF_WEAPON_MEDIGUN ?
-		(Vars::Aimbot::General::PrioritizeFollowbot.Value ? F::FollowBot.m_tLockedTarget.m_iEntIndex : -1) :
-		(Vars::Aimbot::General::PrioritizeNavbot.Value ? F::NavBotStayNear.m_iStayNearTargetIdx : -1)) : -1;
-	if (iPriorityIdx > 0)
-	{
-		std::sort((vTargets).begin(), (vTargets).end(), [&](const Target_t& a, const Target_t& b) -> bool
-			{
-				return a.m_pEntity->entindex() == iPriorityIdx;
-			});
-	}
 	vTargets.resize(std::min(size_t(iMaxTargets), vTargets.size()));
-	if (iPriorityIdx <= 0)
-		SortTargetsPost(vTargets, iMethod);
+	SortTargetsPost(vTargets, iMethod);
 	return vTargets;
 }
 
@@ -367,7 +353,6 @@ bool CAimbotGlobal::ShouldAim()
 {
 	switch (Vars::Aimbot::General::AimType.Value)
 	{
-	case Vars::Aimbot::General::AimTypeEnum::Plain:
 	case Vars::Aimbot::General::AimTypeEnum::Silent:
 		if (!G::CanPrimaryAttack && !G::Reloading && !F::Ticks.IsTimingUnsure())
 			return false;

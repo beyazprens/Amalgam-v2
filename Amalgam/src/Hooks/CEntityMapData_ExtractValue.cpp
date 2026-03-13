@@ -1,6 +1,4 @@
 #include "../SDK/SDK.h"
-#include "../Features/NavBot/NavEngine/NavEngine.h"
-#include "../Features/NavBot/NavBotJobs/GetSupplies.h"
 
 MAKE_SIGNATURE(CEntityMapData_ExtractValue, "client.dll", "48 8B 09 E9 ? ? ? ? CC CC CC CC CC CC CC CC 48 89 5C 24 ? 48 89 6C 24", 0x0);
 MAKE_SIGNATURE(C_PhysPropClientside_ParseEntity_ExtractValue_Call, "client.dll", "84 C0 75 ? 48 8D 0D ? ? ? ? FF 15 ? ? ? ? CC 48 8D 15", 0x0);
@@ -31,7 +29,6 @@ static bool ParseTrigger(CEntityMapData* pData, TriggerTypeEnum::TriggerTypeEnum
 		Vector vOrigin = {}, vAngles = {}, vRotate = {};
 		int iTeam = 0;
 
-		bool bIsRespawnRoom = eType == TriggerTypeEnum::RespawnRoom;
 		do
 		{
 			auto uKeyNameHash = FNV1A::Hash32(szKeyName);
@@ -80,8 +77,6 @@ static bool ParseTrigger(CEntityMapData* pData, TriggerTypeEnum::TriggerTypeEnum
 #ifndef TEXTMODE
 			G::TriggerStorage.push_back(tData);
 #endif 
-			if (bIsRespawnRoom)
-				F::NavEngine.AddRespawnRoom(iTeam, tData);
 			return true;
 		}
 	}
@@ -101,7 +96,6 @@ MAKE_HOOK(CEntityMapData_ExtractValue, S::CEntityMapData_ExtractValue(), bool,
 	{
 		auto uClassNameHash = FNV1A::Hash32(Value);
 		TriggerTypeEnum::TriggerTypeEnum eType = TriggerTypeEnum::None;
-		bool bHealth = true;
 		switch (uClassNameHash)
 		{
 #ifndef TEXTMODE
@@ -133,20 +127,6 @@ MAKE_HOOK(CEntityMapData_ExtractValue, S::CEntityMapData_ExtractValue(), bool,
 			eType = TriggerTypeEnum::ApplyImpulse;
 			break;
 #endif
-		case FNV1A::Hash32Const("item_ammopack_full"):
-		case FNV1A::Hash32Const("item_ammopack_medium"):
-		case FNV1A::Hash32Const("item_ammopack_small"):
-			bHealth = false;
-			[[fallthrough]];
-		case FNV1A::Hash32Const("item_healthkit_full"):
-		case FNV1A::Hash32Const("item_healthkit_medium"):
-		case FNV1A::Hash32Const("item_healthkit_small"):
-		{
-			char szValue[MAPKEY_MAXLENGTH];
-			if (S::CEntityMapData_ExtractValue.Call<bool>(rcx, "origin", szValue))
-				F::NavBotSupplies.AddCachedSupplyOrigin(ParseVector(szValue), bHealth);
-			break;
-		}
 		default:
 			break;
 		}

@@ -2,9 +2,6 @@
 
 #include "../Features/EnginePrediction/EnginePrediction.h"
 #include "../Features/Spectate/Spectate.h"
-#include "../Features/NavBot/NavEngine/NavEngine.h"
-#include "../Features/NavBot/DangerManager/DangerManager.h"
-#include "../Features/NavBot/NavBotJobs/GetSupplies.h"
 #include "../Features/Misc/AutoVote/AutoVote.h"
 #include "../Features/Configs/Configs.h"
 
@@ -19,10 +16,6 @@ MAKE_HOOK(CHLClient_LevelShutdown, U::Memory.GetVirtual(I::Client, 7), void,
 #ifndef TEXTMODE
 	G::TriggerStorage.clear();
 #endif
-	F::NavEngine.ClearRespawnRooms();
-	F::NavEngine.FlushCrumbCache();
-	F::DangerManager.Reset();
-	F::NavBotSupplies.ResetCachedOrigins();
 	F::AutoVote.Reset();
 	F::Configs.HandleAutoConfig(false);
 

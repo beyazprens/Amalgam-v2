@@ -1,6 +1,5 @@
 #include "AutoQueue.h"
 #include "../../Players/PlayerUtils.h"
-#include "../../NavBot/NavEngine/NavEngine.h"
 #include "../Misc.h"
 #include "../NamedPipe/NamedPipe.h"
 
@@ -173,13 +172,12 @@ void CAutoQueue::Run()
 	}
 	else if (bInGameNow && !bIsLoadingMapNow && !m_bNavmeshAbandonTriggered)
 	{
-		const bool bNavMeshUnavailable = !F::NavEngine.IsNavMeshLoaded();
+		const bool bNavMeshUnavailable = false;
 		if (bNavMeshUnavailable)
 		{
 			if (m_flNavmeshAbandonStartTime <= 0.0f)
 			{
 				m_flNavmeshAbandonStartTime = flCurrentTime;
-				F::NavEngine.Reset(true);
 			}
 
 			if ((flCurrentTime - m_flNavmeshAbandonStartTime) >= 10.0f)
@@ -558,21 +556,8 @@ bool CAutoQueue::IsServerValid(const gameserveritem_t* pServer)
 
 bool CAutoQueue::HasNavmeshForMap(const std::string& sMapName)
 {
-	auto sNavPath = F::NavEngine.GetNavFilePath();
-	if (sNavPath.empty())
-		return false;
-
-	const size_t uFirstAfterLastSlash = sNavPath.find_last_of("/\\") + 1;
-	if (sNavPath.find(sMapName, uFirstAfterLastSlash) != uFirstAfterLastSlash)
-		return F::NavEngine.IsNavMeshLoaded();
-
-	std::ifstream navFile(sNavPath, std::ios::binary);
-	if (!navFile.is_open())
-		return false;
-
-	uint32_t uMagic;
-	navFile.read(reinterpret_cast<char*>(&uMagic), sizeof(uint32_t));
-	return uMagic == 0xFEEDFACE;
+	return false;
+}
 }
 
 bool CAutoQueue::IsServerNameMatch(const std::string& sServerName)
