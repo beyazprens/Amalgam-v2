@@ -193,7 +193,7 @@ std::string CMemory::GenerateSignatureAtAddress(uintptr_t uAddress, size_t maxLe
 	std::string sPattern;
 	std::string sModule = GetModuleName(uAddress);
 
-	uintptr_t uMinAddr, uMaxAddr;
+	uintptr_t uMinAddr = 0, uMaxAddr = 0;
 	if (const auto hMod = GetModuleHandleA(sModule.c_str()))
 	{
 		uMinAddr = (uintptr_t)hMod;
