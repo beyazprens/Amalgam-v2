@@ -306,6 +306,8 @@ NAMESPACE_BEGIN(Vars)
 			CVar(TickTolerance, "Tick tolerance", 4, SLIDER_CLAMP, 0, 21);
 			CVar(AutoShoot, "Auto shoot", true);
 			CVar(FOVCircle, "FOV Circle", true, VISUAL);
+			CVar(PrioritizeNavbot, "Prioritize navbot", false);
+			CVar(PrioritizeFollowbot, "Prioritize followbot", false);
 			CVar(NoSpread, "No spread", false);
 
 			CVarEnum(AimHoldsFire, "Aim holds fire", 2, NOSAVE | DEBUGVAR, nullptr,

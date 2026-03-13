@@ -9,6 +9,7 @@
 #include "../Features/Resolver/Resolver.h"
 #include "../Features/Spectate/Spectate.h"
 #include "../Features/Killstreak/Killstreak.h"
+#include "../Features/Misc/GameObjectiveController/GameObjectiveController.h"
 
 MAKE_HOOK(CViewRender_LevelInit, U::Memory.GetVirtual(I::ViewRender, 1), void,
 	void* rcx)

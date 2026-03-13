@@ -558,7 +558,6 @@ bool CAutoQueue::HasNavmeshForMap(const std::string& sMapName)
 {
 	return false;
 }
-}
 
 bool CAutoQueue::IsServerNameMatch(const std::string& sServerName)
 {

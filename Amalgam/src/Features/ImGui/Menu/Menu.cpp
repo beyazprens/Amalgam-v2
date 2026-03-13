@@ -1549,6 +1549,7 @@ void CMenu::MenuMisc(int iTab)
 		}
 		break;
 	}
+	}
 }
 
 void CMenu::MenuAnticheat(int iTab)
