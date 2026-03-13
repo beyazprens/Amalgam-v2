@@ -13,6 +13,7 @@
 #include "../Visuals/Visuals.h"
 #include "../Visuals/FakeAngle/FakeAngle.h"
 #include "../Spectate/Spectate.h"
+#include "../AutoJoin/AutoJoin.h"
 #include "../Misc/AutoItem/AutoItem.h"
 #include "../Misc/AutoVote/AutoVote.h"
 
@@ -286,6 +287,7 @@ void CCreateMove::Run(int nSequenceNum, float flInputSampleFrametime, bool bActi
 	F::Spectate.CreateMove(pCmd);
 #endif
 	F::Misc.RunPre(pLocal, pCmd);
+	F::AutoJoin.Run(pLocal);
 	F::AutoItem.Run(pLocal);
 	F::GameObjectiveController.Update();
 	F::AutoVote.Run(pLocal);

@@ -186,8 +186,8 @@ NAMESPACE_BEGIN(Vars)
 		CVar(MenuShowsBinds, "Menu shows binds", false, NOBIND);
 
 		CVarEnum(Indicators, "Indicators", 0b00000, VISUAL | DROPDOWN_MULTI, nullptr,
-			VA_LIST("Ticks", "Crit hack", "Spectators", "Ping", "Conditions", "Seed prediction", "Navbot"),
-			Ticks = 1 << 0, CritHack = 1 << 1, Spectators = 1 << 2, Ping = 1 << 3, Conditions = 1 << 4, SeedPrediction = 1 << 5, NavBot = 1 << 6);
+			VA_LIST("Ticks", "Crit hack", "Spectators", "Ping", "Conditions", "Seed prediction"),
+			Ticks = 1 << 0, CritHack = 1 << 1, Spectators = 1 << 2, Ping = 1 << 3, Conditions = 1 << 4, SeedPrediction = 1 << 5);
 
 		CVar(BindsDisplay, "Binds display", DragBox_t(100, 100), VISUAL | NOBIND);
 		CVar(TicksDisplay, "Ticks display", DragBox_t(), VISUAL | NOBIND);
@@ -799,30 +799,6 @@ I dont think this is a good idea to disable simulations completely:
 			CVar(MovementLock, "Movement lock", false);
 			CVar(BreakJump, "Break jump", false);
 			CVar(ShieldTurnRate, "Shield turn rate", false);
-
-			NAMESPACE_BEGIN(NavEngine)
-				CVar(Enabled, VA_LIST("Enabled", "Nav engine enabled"), false);
-				CVar(PathRandomization, "Path randomization", false);
-				CVar(PathInSetup, "Path in setup time", false);
-				CVarEnum(Draw, "Draw", 0b011, VISUAL | DROPDOWN_MULTI, nullptr,
-					VA_LIST("Path", "Areas", "Blacklisted zones", "Possible paths", "Walkable (Debug)"),
-					Path = 1 << 0, Area = 1 << 1, Blacklist = 1 << 2, PossiblePaths = 1 << 3, Walkable = 1 << 4);
-				CVarEnum(LookAtPath, "Look at path", 0, NONE, nullptr,
-					VA_LIST("Off", "Plain", "Silent", "Legit", "Legit silent"),
-					Off, Plain, Silent, Legit, LegitSilent);
-
-				CVar(StickyIgnoreTime, "Sticky ignore time", 15, SLIDER_MIN, 15, 100, 5, "%is");
-				CVar(StuckDetectTime, "Stuck detect time", 2, SLIDER_MIN, 2, 26, 2, "%is");
-				CVar(StuckBlacklistTime, "Stuck blacklist time", 60, SLIDER_MIN, 20, 600, 20, "%is");
-				CVar(StuckExpireTime, "Stuck expire time", 5, SLIDER_MIN, 5, 100, 5, "%is");
-				CVar(StuckTime, "Stuck time", 0.2f, SLIDER_MIN, 0.25f, 0.9f, 0.05f, "%gs");
-
-				CVar(VischeckEnabled, "Vischeck enabled", false);
-				CVar(VischeckTime, "Vischeck time", 2.f, SLIDER_MIN, 0.005f, 3.f, 0.005f, "%gs");
-				CVar(VischeckCacheTime, "Vischeck cache time", 90, SLIDER_MIN, 10, 500, 10, "%is");
-			NAMESPACE_END(NavEngine)
-
-
 
 
 			CVar(AutoRocketJumpChokeGrounded, "Choke grounded", 1, NOSAVE | DEBUGVAR, 0, 3);
