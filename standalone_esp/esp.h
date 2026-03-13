@@ -4,11 +4,11 @@
 
 namespace ESP
 {
-    // Arayüzleri ve D3D9 cihazını başlatır.
-    // main thread'den çağrılır; oyunun belleğe yüklenmesi beklenir.
+    // Arayüzleri ve NetVar offsetlerini başlatır.
+    // main thread'den çağrılır; oyunun client.dll + engine.dll yüklemesi beklenir.
     bool Initialize();
 
-    // Her frame çağrılır (HookedEndScene içinden).
+    // Her frame çağrılır (HookedPresent içinden).
     void Draw(IDirect3DDevice9* pDevice);
 
     // Temizlik.
@@ -21,5 +21,5 @@ namespace ESP
     inline bool bEnabled    = false;  // ESP açık mı?
     inline bool bEnemyOnly  = true;   // Sadece düşmanlar mı?
     inline bool bShowHealth = true;   // Sağlık çubuğu
-    inline bool bShowName   = false;  // İsim (gelecek)
 }
+

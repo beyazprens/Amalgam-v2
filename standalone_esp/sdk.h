@@ -3,9 +3,17 @@
 #include <d3d9.h>
 #include <cstdint>
 #include <cmath>
+#include <cstring>
 #include <string>
 
-// ─── Temel tipler ───────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// TF2 x64 SDK — Amalgam-v2 kaynaklarından alınan vtable indeksleri ve yapılar
+//
+// TF2 Mayıs 2023 itibarıyla 64-bit'e geçti. Tüm pointer'lar 8 bayt,
+// calling convention x64 standartı (thiscall yok; ilk argüman RCX = this).
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── Temel tipler ─────────────────────────────────────────────────────────────
 
 struct Vec3
 {
@@ -15,173 +23,285 @@ struct Vec3
     Vec3 operator+(const Vec3& o) const { return { x + o.x, y + o.y, z + o.z }; }
     Vec3 operator-(const Vec3& o) const { return { x - o.x, y - o.y, z - o.z }; }
     Vec3 operator*(float s)        const { return { x * s,   y * s,   z * s   }; }
-    float Length() const { return sqrtf(x * x + y * y + z * z); }
+    float Length()   const { return sqrtf(x*x + y*y + z*z); }
+    float Length2D() const { return sqrtf(x*x + y*y); }
 };
 
-// Kaynak motorunun dünya→ekran için kullandığı 4×4 matris
-struct VMatrix
-{
-    float m[4][4];
-};
+// Kaynak motorunun dünya→ekran dönüşümü için kullandığı 4×4 matris
+struct VMatrix { float m[4][4]; };
 
-// ─── TF2 / Source Engine sabit offsetler (x64 Linux build) ─────────────────
-// Not: Bu offsetler güncelleme ile değişebilir.
-// client.dll bazlı, IClientEntity* vtable erişimi ile okunur.
+// ─── Vtable yardımcı makrosu ─────────────────────────────────────────────────
+// x64'te this pointer her zaman ilk argüman olarak geçer (RCX).
+// __thiscall yoktur; aşağıdaki helper sanal fonksiyonları doğru şekilde çağırır.
 
-namespace Offsets
+template<typename Ret, int Index, typename... Args>
+Ret CallVirtual(void* pThis, Args... args)
 {
-    // CBaseEntity
-    constexpr std::ptrdiff_t m_iTeamNum    = 0x0088;   // int
-    constexpr std::ptrdiff_t m_iHealth     = 0x0096;   // int  (CBasePlayer)
-    constexpr std::ptrdiff_t m_lifeState   = 0x025B;   // byte (0 = alive)
-    constexpr std::ptrdiff_t m_vecOrigin   = 0x0138;   // Vec3 (m_vecAbsOrigin)
-    // Oyuncu sınıfı için kullanılan ayrı bir yapı
-    constexpr std::ptrdiff_t m_iClass      = 0x07A4;   // int (CTFPlayer::m_PlayerClass.m_iClass)
+    using Fn = Ret(*)(void*, Args...);
+    return (*reinterpret_cast<Fn**>(pThis))[Index](pThis, args...);
 }
 
-// ─── Temel Source arayüzleri ────────────────────────────────────────────────
-// Sadece ihtiyacımız olan metodları tanımlıyoruz.
+// ─── NetVar / RecvProp yapıları ───────────────────────────────────────────────
+// Amalgam-v2 / Source SDK'dan birebir alınan bellek düzeni (x64).
+// Amalgam kaynak: Amalgam/src/SDK/Definitions/Misc/dt_recv.h
+
+class  RecvTable;
+
+// RecvProp x64 bellek düzeni (Amalgam/src/SDK/Definitions/Misc/dt_recv.h)
+struct RecvProp
+{
+    const char* m_pVarName;           // +0   (8)
+    int         m_RecvType;           // +8   (4)
+    int         m_Flags;              // +12  (4)
+    int         m_StringBufferSize;   // +16  (4)
+    bool        m_bInsideArray;       // +20  (1) + 3 pad
+    uint8_t     _pad0[3];
+    const void* m_pExtraData;         // +24  (8)
+    RecvProp*   m_pArrayProp;         // +32  (8)
+    void*       m_ArrayLengthProxy;   // +40  (8)
+    void*       m_ProxyFn;            // +48  (8)
+    void*       m_DataTableProxyFn;   // +56  (8)
+    RecvTable*  m_pDataTable;         // +64  (8)
+    int         m_Offset;             // +72  (4)
+    int         m_ElementStride;      // +76  (4)
+    int         m_nElements;          // +80  (4)
+    // +84 padding / m_pParentArrayPropName pointer - kullanmıyoruz
+};
+
+// RecvTable x64 bellek düzeni
+struct RecvTable
+{
+    RecvProp*   m_pProps;             // +0   (8)
+    int         m_nProps;             // +8   (4)
+    int         _pad0;                // +12  (4)
+    void*       m_pDecoder;           // +16  (8)
+    const char* m_pNetTableName;      // +24  (8)
+    bool        m_bInitialized;       // +32  (1)
+    bool        m_bInMainList;        // +33  (1)
+};
+
+// ClientClass bağlantılı listesi — IBaseClientDLL::GetAllClasses() döndürür.
+// Amalgam: Amalgam/src/SDK/Definitions/Misc/ClientClass.h
+struct ClientClass
+{
+    void*        m_pCreateFn;         // +0   (8)
+    void*        m_pCreateEventFn;    // +8   (8)
+    const char*  m_pNetworkName;      // +16  (8)
+    RecvTable*   m_pRecvTable;        // +24  (8)
+    ClientClass* m_pNext;             // +32  (8)
+    int          m_ClassID;           // +40  (4)
+};
+
+// ─── Lightweight NetVar okuyucu ───────────────────────────────────────────────
+// IBaseClientDLL::GetAllClasses() (vtable[8]) → RecvTable zincirini yürüyerek
+// "CBasePlayer.m_iHealth" gibi netvar'ların dinamik offsetlerini bulur.
+// Amalgam kaynak: Amalgam/src/Utils/NetVars/NetVars.cpp
+
+namespace NetVars
+{
+    // Verilen RecvTable içinde szProp'u özyinelemeli arar; bulunursa offset döndürür.
+    inline int GetOffset(RecvTable* pTable, const char* szProp)
+    {
+        if (!pTable) return 0;
+        for (int i = 0; i < pTable->m_nProps; ++i)
+        {
+            RecvProp* p = &pTable->m_pProps[i];
+            if (!p->m_pVarName) continue;
+            if (strcmp(p->m_pVarName, szProp) == 0)
+                return p->m_Offset;
+            if (p->m_pDataTable)
+            {
+                int sub = GetOffset(p->m_pDataTable, szProp);
+                if (sub) return p->m_Offset + sub;
+            }
+        }
+        return 0;
+    }
+
+    // szClass sınıfının szProp netvar offsetini döndürür (pClientDLL üzerinden).
+    // pClientDLL: "VClient017" interface pointer (IBaseClientDLL).
+    inline int GetNetVar(void* pClientDLL, const char* szClass, const char* szProp)
+    {
+        // vtable[8] = GetAllClasses() → ClientClass* döndürür
+        using GetAllClassesFn = ClientClass*(*)(void*);
+        auto head = (*reinterpret_cast<GetAllClassesFn**>(pClientDLL))[8](pClientDLL);
+        for (ClientClass* c = head; c; c = c->m_pNext)
+        {
+            if (c->m_pNetworkName && strcmp(c->m_pNetworkName, szClass) == 0)
+                return GetOffset(c->m_pRecvTable, szProp);
+        }
+        return 0;
+    }
+} // namespace NetVars
+
+// ─── IClientEntity — dinamik netvar erişimi ───────────────────────────────────
+// Offsetler çalışma zamanında NetVars::GetNetVar() ile doldurulur.
+// Ham bellek okuma yöntemi kullanılır (Amalgam NETVAR makrosu ile aynı mantık).
+
+struct NetVarOffsets
+{
+    int m_iTeamNum  = 0;   // CBaseEntity.m_iTeamNum
+    int m_iHealth   = 0;   // CBasePlayer.m_iHealth
+    int m_lifeState = 0;   // CBasePlayer.m_lifeState
+    int m_vecOrigin = 0;   // CBaseEntity.m_vecOrigin
+    bool ready      = false;
+
+    void Init(void* pClientDLL)
+    {
+        m_iTeamNum  = NetVars::GetNetVar(pClientDLL, "CBaseEntity", "m_iTeamNum");
+        m_iHealth   = NetVars::GetNetVar(pClientDLL, "CBasePlayer",  "m_iHealth");
+        m_lifeState = NetVars::GetNetVar(pClientDLL, "CBasePlayer",  "m_lifeState");
+        m_vecOrigin = NetVars::GetNetVar(pClientDLL, "CBaseEntity",  "m_vecOrigin");
+        ready = (m_iTeamNum && m_iHealth && m_lifeState && m_vecOrigin);
+    }
+};
+
+// Global offset deposu (esp.cpp tarafından doldurulur, esp.h üzerinden paylaşılır)
+inline NetVarOffsets g_Offsets;
 
 class IClientEntity
 {
 public:
-    // Bunlar sanal tablo üzerinden çağrılır; offset numaraları TF2 x86'ya göredir.
-    // vtable[0] = destructor, vtable[10] = GetIndex(), vb.
-    // Doğrudan bellek okuması daha güvenilir olduğu için helper fonksiyonlar kullanıyoruz.
-
     template<typename T>
-    T Read(std::ptrdiff_t offset) const
+    const T& Read(int offset) const
     {
         return *reinterpret_cast<const T*>(reinterpret_cast<const uint8_t*>(this) + offset);
     }
 
-    int   GetTeam()       const { return Read<int>(Offsets::m_iTeamNum); }
-    int   GetHealth()     const { return Read<int>(Offsets::m_iHealth);  }
-    uint8_t GetLifeState()const { return Read<uint8_t>(Offsets::m_lifeState); }
-    Vec3  GetOrigin()     const { return Read<Vec3>(Offsets::m_vecOrigin); }
-    bool  IsAlive()       const { return GetLifeState() == 0; }
+    int     GetTeam()      const { return Read<int>(g_Offsets.m_iTeamNum);    }
+    int     GetHealth()    const { return Read<int>(g_Offsets.m_iHealth);     }
+    uint8_t GetLifeState() const { return Read<uint8_t>(g_Offsets.m_lifeState); }
+    Vec3    GetOrigin()    const { return Read<Vec3>(g_Offsets.m_vecOrigin);  }
+    // LIFE_ALIVE = 0 (Amalgam/src/SDK/Definitions/Definitions.h satır 385)
+    bool    IsAlive()      const { return GetLifeState() == 0; }
 };
 
-// ─── IClientEntityList arayüzü ──────────────────────────────────────────────
+// ─── IClientEntityList ────────────────────────────────────────────────────────
+// Interface: "VClientEntityList003" (client.dll)
+// Amalgam kaynak: Amalgam/src/SDK/Definitions/Interfaces/IClientEntityList.h
+//
+// vtable sırası:
+//   [0] GetClientNetworkable
+//   [1] GetClientNetworkableFromHandle
+//   [2] GetClientUnknownFromHandle
+//   [3] GetClientEntity          ← kullanıyoruz
+//   [4] GetClientEntityFromHandle
+//   [5] NumberOfEntities
+//   [6] GetHighestEntityIndex    ← kullanıyoruz
+//   [7] SetMaxEntities
+//   [8] GetMaxEntities
 
 class IClientEntityList
 {
 public:
-    // vtable[3] = GetClientEntity(int index)
     IClientEntity* GetClientEntity(int index)
     {
-        using fn = IClientEntity * (__thiscall*)(void*, int);
-        return (*reinterpret_cast<fn**>(this))[3](this, index);
+        return CallVirtual<IClientEntity*, 3>(this, index);
     }
-    // vtable[8] = GetHighestEntityIndex()
     int GetHighestEntityIndex()
     {
-        using fn = int(__thiscall*)(void*);
-        return (*reinterpret_cast<fn**>(this))[8](this);
+        return CallVirtual<int, 6>(this);
     }
 };
 
-// ─── IEngineClient arayüzü ──────────────────────────────────────────────────
+// ─── IVEngineClient ───────────────────────────────────────────────────────────
+// Interface: "VEngineClient014" (engine.dll)
+// Amalgam kaynak: Amalgam/src/SDK/Definitions/Interfaces/IVEngineClient.h
+//
+// vtable indeksleri (Amalgam'ın IVEngineClient.h'ından sayarak):
+//   [5]  GetScreenSize
+//   [12] GetLocalPlayer
+//   [26] IsInGame
+//   [27] IsConnected
+//   [36] WorldToScreenMatrix
 
-class IEngineClient
+class IVEngineClient
 {
 public:
-    // vtable[12] = GetLocalPlayer()
-    int GetLocalPlayer()
-    {
-        using fn = int(__thiscall*)(void*);
-        return (*reinterpret_cast<fn**>(this))[12](this);
-    }
-    // vtable[37] = WorldToScreenMatrix()  → VMatrix const&
-    const VMatrix& WorldToScreenMatrix()
-    {
-        using fn = const VMatrix & (__thiscall*)(void*);
-        return (*reinterpret_cast<fn**>(this))[37](this);
-    }
-    // vtable[5] = GetScreenSize(int& w, int& h)
     void GetScreenSize(int& w, int& h)
     {
-        using fn = void(__thiscall*)(void*, int&, int&);
-        (*reinterpret_cast<fn**>(this))[5](this, w, h);
+        CallVirtual<void, 5>(this, std::ref(w), std::ref(h));
     }
-    // vtable[26] = IsInGame()
+    int GetLocalPlayer()
+    {
+        return CallVirtual<int, 12>(this);
+    }
     bool IsInGame()
     {
-        using fn = bool(__thiscall*)(void*);
-        return (*reinterpret_cast<fn**>(this))[26](this);
+        return CallVirtual<bool, 26>(this);
     }
-    // vtable[27] = IsConnected()
     bool IsConnected()
     {
-        using fn = bool(__thiscall*)(void*);
-        return (*reinterpret_cast<fn**>(this))[27](this);
+        return CallVirtual<bool, 27>(this);
+    }
+    const VMatrix& WorldToScreenMatrix()
+    {
+        return CallVirtual<const VMatrix&, 36>(this);
     }
 };
 
-// ─── Interface factory yardımcısı ───────────────────────────────────────────
+// ─── Interface factory ────────────────────────────────────────────────────────
 
 inline void* GetInterface(const char* moduleName, const char* interfaceName)
 {
     HMODULE hMod = GetModuleHandleA(moduleName);
-    if (!hMod)
-        return nullptr;
+    if (!hMod) return nullptr;
 
-    using CreateInterfaceFn = void* (*)(const char*, int*);
-    auto CreateInterface = reinterpret_cast<CreateInterfaceFn>(GetProcAddress(hMod, "CreateInterface"));
-    if (!CreateInterface)
-        return nullptr;
+    using CreateInterfaceFn = void*(*)(const char*, int*);
+    auto pFn = reinterpret_cast<CreateInterfaceFn>(GetProcAddress(hMod, "CreateInterface"));
+    if (!pFn) return nullptr;
 
-    return CreateInterface(interfaceName, nullptr);
+    return pFn(interfaceName, nullptr);
 }
 
-// ─── World → Screen projeksiyon ─────────────────────────────────────────────
+// ─── World → Screen projeksiyon ───────────────────────────────────────────────
+// Amalgam/src/SDK/SDK.cpp — W2S mantığı ile aynı matris formülü.
 
-inline bool WorldToScreen(const VMatrix& matrix, const Vec3& worldPos,
-                           int screenW, int screenH,
-                           float& screenX, float& screenY)
+inline bool WorldToScreen(const VMatrix& mtx, const Vec3& world,
+                          int screenW, int screenH,
+                          float& sx, float& sy)
 {
-    // Homogen koordinat dönüşümü
-    float w = matrix.m[3][0] * worldPos.x
-            + matrix.m[3][1] * worldPos.y
-            + matrix.m[3][2] * worldPos.z
-            + matrix.m[3][3];
+    // row 3 = W bileşeni
+    float flW = mtx.m[3][0] * world.x
+              + mtx.m[3][1] * world.y
+              + mtx.m[3][2] * world.z
+              + mtx.m[3][3];
 
-    if (w < 0.001f)
-        return false; // kamera arkasında
+    if (flW < 0.001f) return false; // kamera arkası
 
-    float x = matrix.m[0][0] * worldPos.x
-            + matrix.m[0][1] * worldPos.y
-            + matrix.m[0][2] * worldPos.z
-            + matrix.m[0][3];
+    float invW = 1.f / fabsf(flW);
 
-    float y = matrix.m[1][0] * worldPos.x
-            + matrix.m[1][1] * worldPos.y
-            + matrix.m[1][2] * worldPos.z
-            + matrix.m[1][3];
+    float x = mtx.m[0][0] * world.x
+            + mtx.m[0][1] * world.y
+            + mtx.m[0][2] * world.z
+            + mtx.m[0][3];
 
-    float inv = 1.f / w;
-    screenX = (screenW  / 2.f) + (x * inv) * (screenW  / 2.f);
-    screenY = (screenH / 2.f)  - (y * inv) * (screenH / 2.f);
+    float y = mtx.m[1][0] * world.x
+            + mtx.m[1][1] * world.y
+            + mtx.m[1][2] * world.z
+            + mtx.m[1][3];
+
+    sx = (screenW / 2.f) + x * invW * (screenW / 2.f) + 0.5f;
+    sy = (screenH / 2.f) - y * invW * (screenH / 2.f) + 0.5f;
     return true;
 }
 
-// ─── Oyuncu etrafında 2D kutu hesaplama ─────────────────────────────────────
-// Oyuncunun dünya konumundan yaklaşık bir bounding box üretir.
+// ─── 2D bounding box ─────────────────────────────────────────────────────────
+// Oyuncunun kök konumundan 8-köşe projeksiyon (Amalgam'ın IsOnScreen mantığı).
 
 struct Box2D
 {
     float left, top, right, bottom;
-    bool valid = false;
+    bool  valid = false;
 };
 
 inline Box2D GetPlayerBox(const VMatrix& mtx, const Vec3& origin,
                           int screenW, int screenH)
 {
-    // TF2 oyuncu yaklaşık yüksekliği ~72 HU (Hammer Unit), eni ~32 HU
-    const float halfW = 16.f;
-    const float height = 72.f;
+    // TF2 varsayılan oyuncu boyutu: yükseklik ~72 HU, en ~32 HU
+    constexpr float halfW  = 16.f;
+    constexpr float height = 72.f;
 
-    // 8 köşe noktası
     Vec3 corners[8] = {
         { origin.x - halfW, origin.y - halfW, origin.z          },
         { origin.x + halfW, origin.y - halfW, origin.z          },
@@ -193,17 +313,13 @@ inline Box2D GetPlayerBox(const VMatrix& mtx, const Vec3& origin,
         { origin.x - halfW, origin.y + halfW, origin.z + height },
     };
 
-    Box2D box;
-    box.left   =  1e9f;
-    box.top    =  1e9f;
-    box.right  = -1e9f;
-    box.bottom = -1e9f;
+    Box2D box { 1e9f, 1e9f, -1e9f, -1e9f, false };
 
     for (auto& c : corners)
     {
         float sx, sy;
         if (!WorldToScreen(mtx, c, screenW, screenH, sx, sy))
-            return box; // ekran dışı / kamera arkası
+            return box; // kamera arkasındaki köşe varsa kutuyu atla
 
         if (sx < box.left)   box.left   = sx;
         if (sy < box.top)    box.top    = sy;
