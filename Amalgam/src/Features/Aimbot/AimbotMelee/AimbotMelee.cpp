@@ -124,9 +124,7 @@ static inline std::vector<Target_t> GetTargets(CTFPlayer* pLocal, CTFWeaponBase*
 			Vec3 vPos = pEntity->GetCenter();
 			Vec3 vAngleTo = Math::CalcAngle(vLocalPos, vPos);
 			float flFOVTo = Math::CalcFov(vLocalAngles, vAngleTo);
-			// Friendly buildings with auto repair/upgrade don't require the crosshair to already be on them
-			bool bSkipFOV = bTeam && bWrench;
-			if (!bSkipFOV && flFOVTo > Vars::Aimbot::General::AimFOV.Value)
+			if (flFOVTo > Vars::Aimbot::General::AimFOV.Value)
 				continue;
 
 			int iPriority = 0;
@@ -650,27 +648,6 @@ void CAimbotMelee::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd
 	{
 		const auto iResult = CanHit(tTarget, pLocal, pWeapon);
 		if (!iResult) continue;
-
-		// For wrench on friendly buildings, aim at the nearest build point instead of the
-		// geometric center. Melee hit detection doesn't require precise center aim; any part
-		// of the hitbox within swing range is sufficient. Rescue Ranger is a projectile weapon
-		// handled separately and still needs center aim to land the shot.
-		// If FindNearestBuildPoint fails (no visible attachment), the values from CanHit are
-		// kept as-is, which preserves the previous behaviour as an implicit fallback.
-		if (pWeapon->GetWeaponID() == TF_WEAPON_WRENCH &&
-			(tTarget.m_iTargetType == TargetEnum::Sentry ||
-			 tTarget.m_iTargetType == TargetEnum::Dispenser ||
-			 tTarget.m_iTargetType == TargetEnum::Teleporter) &&
-			tTarget.m_pEntity->m_iTeamNum() == pLocal->m_iTeamNum())
-		{
-			Vec3 vBuildPoint;
-			if (FindNearestBuildPoint(tTarget.m_pEntity->As<CBaseObject>(), pLocal, vBuildPoint))
-			{
-				tTarget.m_vPos = vBuildPoint;
-				tTarget.m_vAngleTo = Math::CalcAngle(m_vEyePos, vBuildPoint);
-				Math::ClampAngles(tTarget.m_vAngleTo);
-			}
-		}
 
 		if (iResult == 2)
 		{

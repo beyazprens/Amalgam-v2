@@ -411,6 +411,9 @@ void CBotUtils::SetSlot(CTFPlayer* pLocal, int iSlot)
 
 void CBotUtils::DoSlowAim(Vec3& vWishAngles, float flSpeed, Vec3 vPreviousAngles)
 {
+	// Yaw
+	if (vPreviousAngles.y != vWishAngles.y)
+	{
 	Vec3 vSlowDelta = vWishAngles - vPreviousAngles;
 
 	// Normalize yaw delta to the shortest rotation path (pitch is bounded to
@@ -425,6 +428,7 @@ void CBotUtils::DoSlowAim(Vec3& vWishAngles, float flSpeed, Vec3 vPreviousAngles
 
 	// Clamp as we changed angles
 	Math::ClampAngles(vWishAngles);
+}
 }
 
 void CBotUtils::LookAtPath(CUserCmd* pCmd, Vec2 vDest, Vec3 vLocalEyePos, bool bSilent)

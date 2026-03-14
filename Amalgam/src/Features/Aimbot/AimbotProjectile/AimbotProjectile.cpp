@@ -56,16 +56,7 @@ static inline std::vector<Target_t> GetTargets(CTFPlayer* pLocal, CTFWeaponBase*
 
 			float flFOVTo; Vec3 vPos, vAngleTo;
 			if (!F::AimbotGlobal.PlayerBoneInFOV(pEntity->As<CTFPlayer>(), vLocalPos, vLocalAngles, flFOVTo, vPos, vAngleTo))
-			{
-				// When auto-switch is active, include the healing target even if it's outside aim FOV
-				// so smooth aim types can move the crosshair towards it
-				bool bAutoSwitchHealTarget = bTeam && bHeal && pEntity->entindex() == F::AutoHeal.m_iTargetIdx && F::AutoHeal.m_iAutoSwitch != 0;
-				if (!bAutoSwitchHealTarget)
 					continue;
-				vPos = pEntity->GetCenter();
-				vAngleTo = Math::CalcAngle(vLocalPos, vPos);
-				flFOVTo = Math::CalcFov(vLocalAngles, vAngleTo);
-			}
 
 			float flDistTo = vLocalPos.DistTo(vPos);
 			int iPriority = F::AimbotGlobal.GetPriority(pEntity->entindex());
@@ -1976,20 +1967,20 @@ bool CAimbotProjectile::RunMain(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUser
 void CAimbotProjectile::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd)
 {
 	m_iWeaponID = pWeapon->GetWeaponID();
-	const bool bAutoSwitch = F::AutoHeal.m_iAutoSwitch != 0;
-	bool bOldAutoShoot = false;
-	if (bAutoSwitch)
+	int iOldAimType = Vars::Aimbot::General::AimType.Value;
+	bool bOldAutoShoot = Vars::Aimbot::General::AutoShoot.Value;
+	if (F::AutoHeal.m_iAutoSwitch != 0)
 	{
-		bOldAutoShoot = Vars::Aimbot::General::AutoShoot.Value;
+		Vars::Aimbot::General::AimType.Value = Vars::Aimbot::General::AimTypeEnum::Silent;
 		Vars::Aimbot::General::AutoShoot.Value = true;
 	}
 	const bool bSuccess = RunMain(pLocal, pWeapon, pCmd);
-	if (bAutoSwitch)
+	if (F::AutoHeal.m_iAutoSwitch != 0)
 	{
 		// Force it to switch back if we cant shoot for too long
 		if (!bSuccess && F::AutoHeal.m_flAutoSwitchExpireTime < I::GlobalVars->curtime)
 			F::AutoHeal.m_iAutoSwitch = 2;
-
+		Vars::Aimbot::General::AimType.Value = iOldAimType;
 		Vars::Aimbot::General::AutoShoot.Value = bOldAutoShoot;
 	}
 #ifdef SPLASH_DEBUG5

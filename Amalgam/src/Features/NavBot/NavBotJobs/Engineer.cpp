@@ -170,12 +170,7 @@ bool CNavBotEngineer::SmackBuilding(CUserCmd* pCmd, CTFPlayer* pLocal, CBaseObje
 	{
 		if (G::Attacking == 1)
 		{
-			// Aim at the nearest height point on the building rather than its geometric center.
-			// For melee, any part of the hitbox registers a hit; precise center aim is unnecessary.
-			Vec3 vAimPos = pBuilding->GetAbsOrigin();
-			vAimPos.z += std::clamp(pLocal->GetEyePosition().z - vAimPos.z,
-				pBuilding->m_vecMins().z, pBuilding->m_vecMaxs().z);
-			pCmd->viewangles = Math::CalcAngle(pLocal->GetEyePosition(), vAimPos);
+			pCmd->viewangles = Math::CalcAngle(pLocal->GetEyePosition(), pBuilding->GetCenter());
 			I::EngineClient->SetViewAngles(pCmd->viewangles);
 		}
 		else
