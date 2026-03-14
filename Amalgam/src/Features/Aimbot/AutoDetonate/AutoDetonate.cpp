@@ -183,10 +183,17 @@ bool CAutoDetonate::CanKill(CBaseEntity* pTarget, float& flDamage, float flDamag
 	ApplyDamageDebuffs(pTarget, flDamage, flDamageNoBuffs);
 	ApplyDamageDebuffs(pTarget, flMaxDamage, flMaxDamageNoBuffs);
 
-	// There is no way we are killing the target, still detonate
-	if (flCurrHealth == iMaxHealth && iMaxHealth > flMaxDamage)
+	// There is no way we are killing the target even at max damage, detonate immediately
+	if (flCurrHealth > flMaxDamage)
 		return true;
 
+	// At this point flCurrHealth <= flMaxDamage (max damage can kill the target).
+	// Detonate when current damage is at the maximum possible (optimal timing).
+	// Since flCurrHealth <= flMaxDamage <= flDamage here, this also implies we can kill.
+	if (flDamage >= flMaxDamage)
+		return true;
+
+	// Target is killable with current damage even though we haven't reached max damage position
 	if (flCurrHealth <= flDamage)
 		return true;
 

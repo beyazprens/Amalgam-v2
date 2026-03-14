@@ -110,6 +110,17 @@ void CAutoAirblast::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCm
 		if (!ShouldTarget(pProjectile, pLocal))
 			continue;
 
+		if (Vars::Aimbot::Projectile::AutoAirblast.Value & Vars::Aimbot::Projectile::AutoAirblastEnum::Legit)
+		{
+			const auto classId = pProjectile->GetClassID();
+			if (classId != ETFClassID::CTFProjectile_Rocket &&
+				classId != ETFClassID::CTFBaseRocket &&
+				classId != ETFClassID::CTFFlameRocket &&
+				classId != ETFClassID::CTFProjectile_SentryRocket &&
+				classId != ETFClassID::CTFGrenadePipebombProjectile)
+				continue;
+		}
+
 		if ((Vars::Aimbot::Projectile::AutoAirblast.Value & Vars::Aimbot::Projectile::AutoAirblastEnum::Smart)
 			&& !IsLethalProjectile(pProjectile, pLocal, F::ProjSim.GetEntities(pProjectile).first))
 			continue;
