@@ -324,7 +324,8 @@ void CResolver::SetYaw(int iUserID, float flValue, bool bAuto)
 		F::Output.ReportResolver(I::EngineClient->GetPlayerForUserID(iUserID), "Set", "yaw", flValue);
 	}
 
-	F::Backtrack.ResolverUpdate(I::ClientEntityList->GetClientEntity(I::EngineClient->GetPlayerForUserID(iUserID))->As<CTFPlayer>());
+	if (auto pEnt = I::ClientEntityList->GetClientEntity(I::EngineClient->GetPlayerForUserID(iUserID)))
+		F::Backtrack.ResolverUpdate(pEnt->As<CTFPlayer>());
 }
 
 void CResolver::SetPitch(int iUserID, float flValue, bool bInverse, bool bAuto)
@@ -347,7 +348,8 @@ void CResolver::SetPitch(int iUserID, float flValue, bool bInverse, bool bAuto)
 	}
 	else
 	{
-		auto pPlayer = I::ClientEntityList->GetClientEntity(I::EngineClient->GetPlayerForUserID(iUserID))->As<CTFPlayer>();
+		auto pEnt = I::ClientEntityList->GetClientEntity(I::EngineClient->GetPlayerForUserID(iUserID));
+		auto pPlayer = pEnt ? pEnt->As<CTFPlayer>() : nullptr;
 		if (pPlayer && fabsf(pPlayer->m_angEyeAnglesX()) != 90.f)
 			F::Output.ReportResolver("Target not using out of bounds pitch");
 
@@ -358,7 +360,8 @@ void CResolver::SetPitch(int iUserID, float flValue, bool bInverse, bool bAuto)
 		F::Output.ReportResolver(I::EngineClient->GetPlayerForUserID(iUserID), "Set", "pitch", flValue);
 	}
 
-	F::Backtrack.ResolverUpdate(I::ClientEntityList->GetClientEntity(I::EngineClient->GetPlayerForUserID(iUserID))->As<CTFPlayer>());
+	if (auto pEnt = I::ClientEntityList->GetClientEntity(I::EngineClient->GetPlayerForUserID(iUserID)))
+		F::Backtrack.ResolverUpdate(pEnt->As<CTFPlayer>());
 }
 
 void CResolver::SetMinwalk(int iUserID, bool bValue)
@@ -367,7 +370,8 @@ void CResolver::SetMinwalk(int iUserID, bool bValue)
 
 	tData.m_bMinwalk = bValue;
 
-	F::Backtrack.ResolverUpdate(I::ClientEntityList->GetClientEntity(I::EngineClient->GetPlayerForUserID(iUserID))->As<CTFPlayer>());
+	if (auto pEnt = I::ClientEntityList->GetClientEntity(I::EngineClient->GetPlayerForUserID(iUserID)))
+		F::Backtrack.ResolverUpdate(pEnt->As<CTFPlayer>());
 	F::Output.ReportResolver(I::EngineClient->GetPlayerForUserID(iUserID), "Set", "minwalk", bValue);
 }
 
@@ -377,7 +381,8 @@ void CResolver::SetView(int iUserID, bool bValue)
 
 	tData.m_bView = bValue;
 
-	F::Backtrack.ResolverUpdate(I::ClientEntityList->GetClientEntity(I::EngineClient->GetPlayerForUserID(iUserID))->As<CTFPlayer>());
+	if (auto pEnt = I::ClientEntityList->GetClientEntity(I::EngineClient->GetPlayerForUserID(iUserID)))
+		F::Backtrack.ResolverUpdate(pEnt->As<CTFPlayer>());
 	F::Output.ReportResolver(I::EngineClient->GetPlayerForUserID(iUserID), "Set", "view", bValue ? "view to local" : "static");
 }
 

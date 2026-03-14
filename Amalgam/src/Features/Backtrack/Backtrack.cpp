@@ -330,7 +330,7 @@ void CBacktrack::CleanRecords()
 
 		//const int iOldSize = pRecords.size();
 
-		const int flDeadtime = I::GlobalVars->curtime + GetReal() - m_flMaxUnlag; // int ???
+		const float flDeadtime = I::GlobalVars->curtime + GetReal() - m_flMaxUnlag;
 		if (vRecords.size() > 1 && vRecords.back().m_flSimTime == std::numeric_limits<float>::max())
 			vRecords.pop_back();
 		while (!vRecords.empty())
@@ -450,7 +450,7 @@ std::optional<TickRecord> CBacktrack::GetHitRecord(CBaseEntity* pEntity, CTFWeap
 		vRecords = F::Backtrack.GetValidRecords(vRecords);
 		for (auto pRecord : vRecords)
 		{
-			for (int n = 0; n < pRecord->m_vHitboxInfos.size(); n++)
+			for (size_t n = 0; n < pRecord->m_vHitboxInfos.size(); n++)
 			{
 				auto sHitboxInfo = pRecord->m_vHitboxInfos[n];
 

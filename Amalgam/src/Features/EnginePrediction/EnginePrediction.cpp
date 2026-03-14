@@ -88,11 +88,20 @@ void CEnginePrediction::Start(CTFPlayer* pLocal, CUserCmd* pCmd)
 	if (!m_tLocal.m_pData) 
 	{
 		m_tLocal.m_pData = reinterpret_cast<byte*>(I::MemAlloc->Alloc(iSize));
+		if (!m_tLocal.m_pData)
+			return;
 		m_tLocal.m_iSize = iSize;
 	}
 	else if (m_tLocal.m_iSize != iSize)
 	{
-		m_tLocal.m_pData = reinterpret_cast<byte*>(I::MemAlloc->Realloc(m_tLocal.m_pData, iSize));
+		auto pNewData = reinterpret_cast<byte*>(I::MemAlloc->Realloc(m_tLocal.m_pData, iSize));
+		if (!pNewData)
+		{
+			m_tLocal.m_pData = nullptr;
+			m_tLocal.m_iSize = 0;
+			return;
+		}
+		m_tLocal.m_pData = pNewData;
 		m_tLocal.m_iSize = iSize;
 	}
 
