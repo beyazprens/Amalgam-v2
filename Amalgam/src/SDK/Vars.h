@@ -280,9 +280,13 @@ NAMESPACE_BEGIN(Vars)
 
 	NAMESPACE_BEGIN(Aimbot)
 		NAMESPACE_BEGIN(General, Aimbot)
-			CVarEnum(AimType, "Aim type", 0, NONE, nullptr,
-				VA_LIST("Off", "Plain", "Smooth", "Silent", "Locking", "Assistive", "Legit", "SmoothVelocity"),
-				Off, Plain, Smooth, Silent, Locking, Assistive, Legit, SmoothVelocity);
+			// Only show human-like options in the UI dropdown.
+			// Plain (5), Silent (6), Locking (7) are intentionally excluded from the display list;
+			// they are set programmatically by internal systems (AutoHeal, AutoAirblast, grappling hook).
+			CVarValues(AimType, "Aim type", 0, NONE, nullptr,
+				VA_LIST("Off", "Smooth", "SmoothVelocity", "Assistive", "Legit"));
+			Enum(AimType, Off = 0, Smooth = 1, SmoothVelocity = 2, Assistive = 3, Legit = 4,
+				Plain = 5, Silent = 6, Locking = 7);
 			CVarEnum(TargetSelection, "Target selection", 0, NONE, nullptr,
 				VA_LIST("FOV", "Distance", "Hybrid"),
 				FOV, Distance, Hybrid);
@@ -300,10 +304,6 @@ NAMESPACE_BEGIN(Vars)
 			CVar(MaxTargets, "Max targets", 2, SLIDER_MIN, 1, 6);
 			CVar(IgnoreInvisible, "Ignore invisible", 50.f, SLIDER_CLAMP | SLIDER_PRECISION, 0.f, 100.f, 10.f, "%g%%");
 			CVar(AssistStrength, "Assist strength", 25.f, SLIDER_CLAMP | SLIDER_PRECISION, 0.f, 100.f, 1.f, "%g%%");
-			CVarEnum(SmoothCurve, "Smooth curve", 0, NONE, nullptr,
-				VA_LIST("Linear", "Fast start", "Fast end", "Slow start", "Slow end"),
-				Linear, FastStart, FastEnd, SlowStart, SlowEnd);
-			CVar(SmoothCurveAmount, "Smooth curve amount", 100.f, SLIDER_CLAMP | SLIDER_PRECISION, 0.f, 200.f, 5.f, "%g%%");
 			CVar(TickTolerance, "Tick tolerance", 4, SLIDER_CLAMP, 0, 21);
 			CVar(AutoShoot, "Auto shoot", true);
 			CVar(FOVCircle, "FOV Circle", true, VISUAL);

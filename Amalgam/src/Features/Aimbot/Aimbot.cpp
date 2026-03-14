@@ -28,26 +28,16 @@ float CAimbot::GetSmoothStrength(const Vec3& vCurAngle, const Vec3& vToAngle) co
 
 	float flAimFOV = std::max(Vars::Aimbot::General::AimFOV.Value, 1.f);
 	float flFovRatio = std::clamp(Math::CalcFov(vCurAngle, vToAngle) / flAimFOV, 0.f, 1.f);
-	float flCloseRatio = 1.f - flFovRatio;
-	float flCurve = 1.f;
 
-	switch (Vars::Aimbot::General::SmoothCurve.Value)
-	{
-	case Vars::Aimbot::General::SmoothCurveEnum::FastStart:
-		flCurve = 1.f - flCloseRatio * flCloseRatio;
-		break;
-	case Vars::Aimbot::General::SmoothCurveEnum::FastEnd:
-		flCurve = 1.f - flFovRatio * flFovRatio;
-		break;
-	case Vars::Aimbot::General::SmoothCurveEnum::SlowStart:
-		flCurve = flCloseRatio * flCloseRatio;
-		break;
-	case Vars::Aimbot::General::SmoothCurveEnum::SlowEnd:
-		flCurve = flFovRatio * flFovRatio;
-		break;
-	}
+	// Auto-calculate curve: use SlowEnd (decelerate as crosshair approaches target)
+	// for natural human-like aiming feel. Curve amount scales with mouse sensitivity.
+	float flCurve = flFovRatio * flFovRatio; // SlowEnd: slowest near target
 
-	const float flCurveAmount = std::clamp(Vars::Aimbot::General::SmoothCurveAmount.Value / 100.f, 0.f, 2.f);
+	// static local: ConVar pointer is looked up once and cached across calls
+	static auto sensitivity = H::ConVars.FindVar("sensitivity");
+	const float flSens = (sensitivity && sensitivity->GetFloat() > 0.f) ? sensitivity->GetFloat() : 3.f;
+	// Higher sensitivity = more curve (counteract overshoot); lower sensitivity = less curve
+	const float flCurveAmount = std::clamp(flSens / 3.f, 0.5f, 1.5f);
 	flCurve = 1.f - (1.f - flCurve) * flCurveAmount;
 
 	float flVelocityScale = 1.f;

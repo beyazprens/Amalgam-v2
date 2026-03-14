@@ -173,7 +173,7 @@ std::vector<TickRecord*> CBacktrack::GetValidRecords(std::vector<TickRecord*>& v
 		float flMinDelta = 0.2f;
 		for (auto pRecord : vRecords)
 		{
-			float flDelta = fabsf(flCorrect - TICKS_TO_TIME(iServerTick - TIME_TO_TICKS(pRecord->m_flSimTime + flTimeMod)));
+			float flDelta = fabsf(flCorrect - (TICKS_TO_TIME(iServerTick) - (pRecord->m_flSimTime + flTimeMod)));
 			if (flDelta > flMinDelta)
 				continue;
 
@@ -198,8 +198,8 @@ std::vector<TickRecord*> CBacktrack::GetValidRecords(std::vector<TickRecord*>& v
 					if (Vars::Backtrack::PreferOnShot.Value && a->m_bOnShot != b->m_bOnShot)
 						return a->m_bOnShot > b->m_bOnShot;
 
-					const float flADelta = flCorrect - (TICKS_TO_TIME(iServerTick - (a->m_flSimTime + flTimeMod)));
-					const float flBDelta = flCorrect - (TICKS_TO_TIME(iServerTick - (b->m_flSimTime + flTimeMod)));
+					const float flADelta = flCorrect - (TICKS_TO_TIME(iServerTick) - (a->m_flSimTime + flTimeMod));
+					const float flBDelta = flCorrect - (TICKS_TO_TIME(iServerTick) - (b->m_flSimTime + flTimeMod));
 					return fabsf(flADelta) < fabsf(flBDelta);
 				});
 		}
