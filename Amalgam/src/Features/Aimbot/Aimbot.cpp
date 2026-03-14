@@ -83,7 +83,7 @@ void CAimbot::RunAimbot(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCm
 	m_bRunningSecondary = bSecondaryType;
 	EWeaponType eWeaponType = !m_bRunningSecondary ? G::PrimaryWeaponType : G::SecondaryWeaponType;
 
-	bool bOriginal;
+	bool bOriginal = false;
 	if (m_bRunningSecondary)
 		bOriginal = G::CanPrimaryAttack, G::CanPrimaryAttack = G::CanSecondaryAttack;
 

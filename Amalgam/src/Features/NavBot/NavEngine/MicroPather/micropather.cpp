@@ -313,6 +313,8 @@ void PathNodePool::Clear()
 PathNodePool::Block* PathNodePool::NewBlock()
 {
     auto block = static_cast<Block*>(calloc(1, sizeof(Block) + sizeof(PathNode) * (allocate - 1)));
+    if (!block)
+        return nullptr;
     block->nextBlock = nullptr;
 
     nAvailable += allocate;
@@ -379,6 +381,8 @@ PathNode* PathNodePool::Alloc()
         MPASSERT(nAvailable == 0)
 
         Block* b = NewBlock();
+        if (!b)
+            return nullptr;
         b->nextBlock = blocks;
         blocks = b;
         MPASSERT(freeMemSentinel.next != &freeMemSentinel)

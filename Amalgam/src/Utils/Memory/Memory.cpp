@@ -168,6 +168,8 @@ using CreateInterfaceFn = void*(*)(const char* pName, int* pReturnCode);
 PVOID CMemory::FindInterface(const char* szModule, const char* szObject)
 {
 	const auto CreateInterface = GetModuleExport<CreateInterfaceFn>(szModule, "CreateInterface");
+	if (!CreateInterface)
+		return nullptr;
 	return CreateInterface(szObject, nullptr);
 }
 
