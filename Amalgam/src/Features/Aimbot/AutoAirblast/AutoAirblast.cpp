@@ -195,6 +195,8 @@ void CAutoAirblast::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCm
 					if (pShooter && pShooter->IsAlive())
 					{
 						Vec3 vShooterAngle = Math::CalcAngle(vEyePos, pShooter->GetShootPos());
+						if (!CanAirblastEntity(pLocal, pWeapon, pProjectile, vShooterAngle))
+							vShooterAngle = vAngle;
 						SDK::FixMovement(pCmd, vShooterAngle);
 						pCmd->viewangles = vShooterAngle;
 					}
@@ -207,8 +209,17 @@ void CAutoAirblast::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCm
 				}
 			}
 		}
-		else if (CanAirblastEntity(pLocal, pWeapon, pProjectile, pCmd->viewangles))
-			bShouldBlast = true;
+		else
+		{
+			Vec3 vAngle = Math::CalcAngle(vEyePos, vOrigin);
+			if (CanAirblastEntity(pLocal, pWeapon, pProjectile, vAngle))
+			{
+				bShouldBlast = true;
+				SDK::FixMovement(pCmd, vAngle);
+				pCmd->viewangles = vAngle;
+				G::PSilentAngles = true;
+			}
+		}
 		pProjectile->SetAbsOrigin(vRestoreOrigin);
 
 		if (bShouldBlast)
