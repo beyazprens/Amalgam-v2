@@ -2176,8 +2176,6 @@ bool CAimbotProjectile::TestAngle(CBaseEntity* pProjectile, const Vec3& vPoint, 
 	F::ProjSim.GetInfo(pProjectile, m_tProjInfo);
 	CGameTrace trace = {};
 	{
-		CTraceFilterWorldAndPropsOnly filter = {};
-
 		Vec3 vEyePos = pLocal->GetShootPos(); // m_tInfo.m_vLocalEye is not actually our shootpos here
 		m_tProjInfo.m_vPos = pProjectile->GetAbsOrigin();
 
@@ -2187,15 +2185,10 @@ bool CAimbotProjectile::TestAngle(CBaseEntity* pProjectile, const Vec3& vPoint, 
 		Vec3 vForward = (vPos - m_tProjInfo.m_vPos).Normalized();
 		m_tProjInfo.m_vAng = Math::VectorAngles(vForward);
 
-		SDK::Trace(m_tProjInfo.m_vPos, m_tProjInfo.m_vPos + vForward * MAX_TRACE_LENGTH, MASK_SOLID, &filter, &trace);
-		vAngles = Math::CalcAngle(vEyePos, trace.endpos);
-		vForward = (vEyePos - trace.endpos).Normalized();
-		if (vForward.Dot(trace.plane.normal) <= 0)
-			return false;
-
-		SDK::Trace(vEyePos, trace.endpos, MASK_SOLID, &filter, &trace);
-		if (trace.fraction < 0.999f)
-			return false;
+		// Compute the look angle as the direction from the player toward the redirect travel path.
+		// Using a far point along vForward from the projectile gives the correct aim direction
+		// without requiring line-of-sight to a specific wall endpoint.
+		vAngles = Math::CalcAngle(vEyePos, m_tProjInfo.m_vPos + vForward * MAX_TRACE_LENGTH);
 
 		if (!F::AutoAirblast.CanAirblastEntity(pLocal, pWeapon, pProjectile, vAngles))
 			return false;
@@ -2313,7 +2306,7 @@ bool CAimbotProjectile::CanHit(Target_t& tTarget, CTFPlayer* pLocal, CTFWeaponBa
 	F::MoveSim.Initialize(tTarget.m_pEntity, m_tMoveStorage);
 	tTarget.m_vPos = tTarget.m_pEntity->m_vecOrigin();
 
-	m_tInfo = { pLocal, m_tProjInfo.m_pWeapon, &tTarget, pProjectile };
+	m_tInfo = { pLocal, pWeapon, &tTarget, pProjectile };
 	m_tInfo.m_flLatency = F::Backtrack.GetReal() + TICKS_TO_TIME(F::Backtrack.GetAnticipatedChoke());
 	m_tInfo.m_vHull = pProjectile->m_vecMaxs().Min(3);
 	{
