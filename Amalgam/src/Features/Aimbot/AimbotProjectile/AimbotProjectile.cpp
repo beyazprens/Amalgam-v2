@@ -1969,16 +1969,19 @@ void CAimbotProjectile::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd*
 	m_iWeaponID = pWeapon->GetWeaponID();
 	int iOldAimType = Vars::Aimbot::General::AimType.Value;
 	bool bOldAutoShoot = Vars::Aimbot::General::AutoShoot.Value;
-	if (F::AutoHeal.m_iAutoSwitch != 0)
+	// Force silent aim and auto-shoot for auto arrow (crossbow healing) when AimType is off
+	bool bAutoArrowActive = m_iWeaponID == TF_WEAPON_CROSSBOW && Vars::Aimbot::Healing::AutoArrow.Value;
+	if (F::AutoHeal.m_iAutoSwitch != 0 || bAutoArrowActive)
 	{
-		Vars::Aimbot::General::AimType.Value = Vars::Aimbot::General::AimTypeEnum::Silent;
+		if (!Vars::Aimbot::General::AimType.Value)
+			Vars::Aimbot::General::AimType.Value = Vars::Aimbot::General::AimTypeEnum::Silent;
 		Vars::Aimbot::General::AutoShoot.Value = true;
 	}
 	const bool bSuccess = RunMain(pLocal, pWeapon, pCmd);
-	if (F::AutoHeal.m_iAutoSwitch != 0)
+	if (F::AutoHeal.m_iAutoSwitch != 0 || bAutoArrowActive)
 	{
 		// Force it to switch back if we cant shoot for too long
-		if (!bSuccess && F::AutoHeal.m_flAutoSwitchExpireTime < I::GlobalVars->curtime)
+		if (F::AutoHeal.m_iAutoSwitch != 0 && !bSuccess && F::AutoHeal.m_flAutoSwitchExpireTime < I::GlobalVars->curtime)
 			F::AutoHeal.m_iAutoSwitch = 2;
 		Vars::Aimbot::General::AimType.Value = iOldAimType;
 		Vars::Aimbot::General::AutoShoot.Value = bOldAutoShoot;

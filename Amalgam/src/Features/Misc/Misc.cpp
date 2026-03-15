@@ -19,6 +19,7 @@ void CMisc::RunPre(CTFPlayer* pLocal, CUserCmd* pCmd)
 	VoiceCommandSpam(pLocal);
 	ChatSpam(pLocal);
 	AutoDisguise(pLocal);
+	AutoDeadRinger(pLocal, pCmd);
 	JoinSpam(pLocal);
 	AchievementSpam(pLocal);
 	CallVoteSpam(pLocal);
@@ -437,6 +438,33 @@ void CMisc::AutoDisguise(CTFPlayer* pLocal)
 
 	const int iClass = SDK::RandomInt(1, 9);
 	I::EngineClient->ClientCmd_Unrestricted(std::format("disguise {} -1", iClass).c_str());
+}
+
+void CMisc::AutoDeadRinger(CTFPlayer* pLocal, CUserCmd* pCmd)
+{
+	if (!Vars::Misc::Automation::AutoDeadRinger.Value || !pLocal->IsAlive() || !pLocal->IsInValidTeam() || pLocal->m_iClass() != TF_CLASS_SPY)
+		return;
+
+	// Check Dead Ringer is equipped in secondary slot
+	auto pWatch = pLocal->GetWeaponFromSlot(SLOT_SECONDARY);
+	if (!pWatch || pWatch->m_iItemDefinitionIndex() != Spy_w_TheDeadRinger)
+		return;
+
+	// Dead Ringer must be charged and not already triggered or cloaked
+	if (!pLocal->m_bFeignDeathReady() || pLocal->InCond(TF_COND_FEIGN_DEATH) || pLocal->InCond(TF_COND_STEALTHED))
+		return;
+
+	// Activate when health falls below threshold
+	if (pLocal->m_iHealth() > Vars::Misc::Automation::AutoDeadRingerHealth.Value)
+		return;
+
+	// If already holding the watch, press attack to activate feign death
+	auto pActiveEnt = pLocal->m_hActiveWeapon().Get();
+	auto pActive = pActiveEnt ? pActiveEnt->As<CTFWeaponBase>() : nullptr;
+	if (pActive && pActive->GetWeaponID() == TF_WEAPON_INVIS)
+		pCmd->buttons |= IN_ATTACK;
+	else
+		I::EngineClient->ClientCmd_Unrestricted("slot2");
 }
 
 void CMisc::JoinSpam(CTFPlayer* pLocal)

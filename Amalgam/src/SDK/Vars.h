@@ -921,6 +921,8 @@ I dont think this is a good idea to disable simulations completely:
 			CVar(TauntControl, "Taunt control", false);
 			CVar(KartControl, "Kart control", false);
 			CVar(AutoDisguise, "Auto disguise", false);
+			CVar(AutoDeadRinger, "Auto dead ringer", false);
+			CVar(AutoDeadRingerHealth, "DR activate at health", 40, SLIDER_CLAMP, 1, 150);
 			CVar(AutoTaunt, "Auto taunt on kill", false);
 			CVar(AutoTauntChance, "Auto taunt chance", 100, SLIDER_CLAMP, 0, 100, 1, "%i%%");
 			CVar(AchievementSpam, "Achievement spam", false);

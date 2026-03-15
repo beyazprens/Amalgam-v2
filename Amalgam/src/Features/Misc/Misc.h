@@ -18,6 +18,7 @@ private:
 	void VoiceCommandSpam(CTFPlayer* pLocal);
 	void ChatSpam(CTFPlayer* pLocal);
 	void AutoDisguise(CTFPlayer* pLocal);
+	void AutoDeadRinger(CTFPlayer* pLocal, CUserCmd* pCmd);
 	void JoinSpam(CTFPlayer* pLocal);
 	void AutoBanJoiner();
 

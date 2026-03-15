@@ -660,11 +660,14 @@ void CAimbotMelee::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd
 		G::AimTarget = { tTarget.m_pEntity->entindex(), I::GlobalVars->tickcount };
 		G::AimPoint = { tTarget.m_vPos, I::GlobalVars->tickcount };
 
-		if (Vars::Aimbot::General::AutoShoot.Value && pWeapon->m_flSmackTime() < 0.f)
+		if (pWeapon->m_flSmackTime() < 0.f)
 		{
-			if (m_bShouldSwing)
+			// AutoBackstab works independently of AutoShoot: auto-press attack for knife backstabs only
+			bool bShouldAttack = Vars::Aimbot::General::AutoShoot.Value
+				|| (pWeapon->GetWeaponID() == TF_WEAPON_KNIFE && Vars::Aimbot::Melee::AutoBackstab.Value);
+			if (m_bShouldSwing && bShouldAttack)
 				pCmd->buttons |= IN_ATTACK;
-			if (m_iDoubletapTicks)
+			if (Vars::Aimbot::General::AutoShoot.Value && m_iDoubletapTicks)
 				F::Ticks.m_bDoubletap = true;
 		}
 
