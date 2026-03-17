@@ -1993,7 +1993,7 @@ void CAimbotProjectile::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd*
 	bool bOldAutoShoot = Vars::Aimbot::General::AutoShoot.Value;
 	if (F::AutoHeal.m_iAutoSwitch != 0)
 	{
-		Vars::Aimbot::General::AimType.Value = Vars::Aimbot::General::AimTypeEnum::Locking;
+		Vars::Aimbot::General::AimType.Value = Vars::Aimbot::General::AimTypeEnum::Silent;
 		Vars::Aimbot::General::AutoShoot.Value = true;
 	}
 	const bool bSuccess = RunMain(pLocal, pWeapon, pCmd);
