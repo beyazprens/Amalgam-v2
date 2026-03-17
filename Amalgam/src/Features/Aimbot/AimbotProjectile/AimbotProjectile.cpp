@@ -2187,15 +2187,11 @@ bool CAimbotProjectile::TestAngle(CBaseEntity* pProjectile, const Vec3& vPoint, 
 		Vec3 vForward = (vPos - m_tProjInfo.m_vPos).Normalized();
 		m_tProjInfo.m_vAng = Math::VectorAngles(vForward);
 
-		SDK::Trace(m_tProjInfo.m_vPos, m_tProjInfo.m_vPos + vForward * MAX_TRACE_LENGTH, MASK_SOLID, &filter, &trace);
-		vAngles = Math::CalcAngle(vEyePos, trace.endpos);
-		vForward = (vEyePos - trace.endpos).Normalized();
-		if (vForward.Dot(trace.plane.normal) <= 0)
-			return false;
-
-		SDK::Trace(vEyePos, trace.endpos, MASK_SOLID, &filter, &trace);
+		SDK::Trace(m_tProjInfo.m_vPos, vPos, MASK_SOLID, &filter, &trace);
 		if (trace.fraction < 0.999f)
 			return false;
+
+		vAngles = Math::CalcAngle(vEyePos, vPos);
 
 		if (!F::AutoAirblast.CanAirblastEntity(pLocal, pWeapon, pProjectile, vAngles))
 			return false;
