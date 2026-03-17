@@ -195,21 +195,25 @@ void CAutoAirblast::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCm
 					Vec3 vFallbackAngle = vAngle;
 					if (pShooter && pShooter->IsAlive())
 					{
-						const Vec3 vShooterFeet = pShooter->GetAbsOrigin();
 						CTraceFilterWorldAndPropsOnly filter = {};
 						CGameTrace trace = {};
-						// Trace from eye toward shooter's feet to detect walls
-						SDK::Trace(vEyePos, vShooterFeet, MASK_SOLID, &filter, &trace);
+						// Check LOS to shooter's body center for a direct hit
+						const Vec3 vShooterCenter = pShooter->GetCenter();
+						SDK::Trace(vEyePos, vShooterCenter, MASK_SOLID, &filter, &trace);
 						if (trace.fraction >= 0.999f)
 						{
-							// Clear line of sight - aim at shooter's feet for splash damage
-							vFallbackAngle = Math::CalcAngle(vEyePos, vShooterFeet);
+							// Clear line of sight - aim at shooter's body center for a direct hit
+							vFallbackAngle = Math::CalcAngle(vEyePos, vShooterCenter);
 						}
 						else
 						{
-							// Shooter is behind a wall - trace downward from the
-							// obstruction point to find the ground for splash damage
-							const Vec3 vWallHit = trace.endpos;
+							// Shooter is behind cover - find nearest damageable point:
+							// trace from eye to shooter's feet, find the wall surface,
+							// then trace down to find the ground at the wall base
+							const Vec3 vShooterFeet = pShooter->GetAbsOrigin();
+							CGameTrace feetTrace = {};
+							SDK::Trace(vEyePos, vShooterFeet, MASK_SOLID, &filter, &feetTrace);
+							const Vec3 vWallHit = feetTrace.endpos;
 							CGameTrace groundTrace = {};
 							SDK::Trace(vWallHit, vWallHit - Vec3(0.f, 0.f, 256.f), MASK_SOLID, &filter, &groundTrace);
 							const Vec3 vGroundPoint = groundTrace.fraction < 1.f ? groundTrace.endpos : vWallHit;
