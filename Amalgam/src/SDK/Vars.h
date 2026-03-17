@@ -586,7 +586,7 @@ NAMESPACE_BEGIN(Vars)
 		CVar(SpeedHackConsecutive, "Speed hack consecutive", 3, SLIDER_MIN, 2, 6); // consecutive violations required
 		CVar(ReactionTimeThreshold, "Reaction time threshold", 50, SLIDER_MIN, 10, 150); // ms, below = flag
 		CVar(AntiAimMinDeviation, "Anti-aim min deviation", 150.f, SLIDER_PRECISION, 90.f, 180.f, 5.f); // degrees
-		CVar(AntiAimMaxDeviation, "Anti-aim max deviation", 210.f, SLIDER_PRECISION, 180.f, 270.f, 5.f); // degrees
+		CVar(AntiAimMaxDeviation, "Anti-aim max deviation", 180.f, SLIDER_PRECISION, 90.f, 180.f, 5.f); // degrees — normalized diff is always in [0,180]
 		CVar(AntiAimConsecutive, "Anti-aim consecutive ticks", 2, SLIDER_MIN, 2, 6); // consecutive ticks required
 	NAMESPACE_END(CheaterDetection)
 

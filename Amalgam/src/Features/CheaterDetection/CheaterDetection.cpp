@@ -414,22 +414,16 @@ bool CCheaterDetection::IsAntiAiming(CTFPlayer* pEntity)
 	const float flViewYaw = pEntity->GetEyeAngles().y;
 
 	// Normalize absolute yaw difference to [0, 180].
-	// Eye yaw is in [-180, 180] and VectorAngles yaw is also in [-180, 180],
-	// so the raw fabsf difference can be at most 360. Clamp to 360 first, then
-	// fold the upper half back into [0, 180].
+	// Both angles are in [-180, 180]. When they straddle the ±180 wrap boundary
+	// (e.g. -170 vs +170) fabsf gives 340; fold those values back to [0, 180].
 	float flDiff = fabsf(flViewYaw - flVelocityYaw);
-	if (flDiff > 360.f)
-		flDiff = 360.f;
 	if (flDiff > 180.f)
 		flDiff = 360.f - flDiff;
 
 	const float flMin = Vars::CheaterDetection::AntiAimMinDeviation.Value;
 	const float flMax = Vars::CheaterDetection::AntiAimMaxDeviation.Value;
 
-	// flDiff is in [0, 180], so cap flMax at 180 for the comparison
-	const float flMaxClamped = std::min(flMax, 180.f);
-
-	if (flDiff >= flMin && flDiff <= flMaxClamped)
+	if (flDiff >= flMin && flDiff <= flMax)
 	{
 		tAntiAim.m_iConsecutiveTicks++;
 		if (tAntiAim.m_iConsecutiveTicks >= Vars::CheaterDetection::AntiAimConsecutive.Value)
@@ -694,7 +688,7 @@ void CCheaterDetection::ReportDamage(IGameEvent* pEvent)
 			tHitboxAbuse.m_vHits.push_back({ flNow, bIsHeadshot });
 
 			const int iSampleSize = Vars::CheaterDetection::HitboxAbuseSampleSize.Value;
-			if (iSampleSize >= 1 && (int)tHitboxAbuse.m_vHits.size() >= iSampleSize)
+			if ((int)tHitboxAbuse.m_vHits.size() >= iSampleSize)
 			{
 				int iHeadshots = 0;
 				for (auto& tHit : tHitboxAbuse.m_vHits)
