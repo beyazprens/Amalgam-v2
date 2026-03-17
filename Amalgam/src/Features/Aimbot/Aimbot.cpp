@@ -66,9 +66,12 @@ float CAimbot::GetSmoothStrength(const Vec3& vCurAngle, const Vec3& vToAngle) co
 
 			if (auto pTarget = I::ClientEntityList->GetClientEntity(G::AimTarget.m_iEntIndex)->As<CBaseEntity>())
 			{
-				const float flSpeed = pTarget->GetAbsVelocity().Length2D();
-				const float flSpeedRatio = std::clamp(flSpeed / 320.f, 0.f, 1.75f);
-				s_flCachedVelocityScale = std::clamp(0.65f + flSpeedRatio * 0.4f, 0.35f, 1.35f);
+				if (pTarget->IsPlayer())
+				{
+					const float flSpeed = pTarget->GetAbsVelocity().Length2D();
+					const float flSpeedRatio = std::clamp(flSpeed / 320.f, 0.f, 1.75f);
+					s_flCachedVelocityScale = std::clamp(0.65f + flSpeedRatio * 0.4f, 0.35f, 1.35f);
+				}
 			}
 		}
 
