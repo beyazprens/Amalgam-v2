@@ -259,8 +259,15 @@ bool CCheaterDetection::IsSpeedHacking(CTFPlayer* pEntity, float flDeltaTime)
 		return false;
 	}
 
-	// Skip players under a speed-altering condition (e.g. Bonk, Halloween speed boost)
-	if (pEntity->InCond(TF_COND_SPEED_BOOST) || pEntity->InCond(TF_COND_HALLOWEEN_SPEED_BOOST))
+	// Skip players under any speed-altering condition to avoid false positives:
+	// TF_COND_SPEED_BOOST        – Disciplinary Action / Soldier War Cry
+	// TF_COND_HALLOWEEN_SPEED_BOOST – Halloween gift / boss proximity
+	// TF_COND_RUNE_HASTE         – Powerup mode Haste rune (2× speed)
+	// TF_COND_RUNE_AGILITY       – Powerup mode Agility rune (1.3× speed)
+	// TF_COND_BLASTJUMPING       – residual horizontal velocity on landing tick
+	if (pEntity->InCond(TF_COND_SPEED_BOOST) || pEntity->InCond(TF_COND_HALLOWEEN_SPEED_BOOST)
+		|| pEntity->InCond(TF_COND_RUNE_HASTE) || pEntity->InCond(TF_COND_RUNE_AGILITY)
+		|| pEntity->InCond(TF_COND_BLASTJUMPING))
 	{
 		tSpeedHack.m_bHasLastPos = false;
 		tSpeedHack.m_iConsecutiveViolations = 0;
@@ -406,8 +413,13 @@ bool CCheaterDetection::IsAntiAiming(CTFPlayer* pEntity)
 	const float flVelocityYaw = Math::VectorAngles(Vec3(vVelocity.x, vVelocity.y, 0.f)).y;
 	const float flViewYaw = pEntity->GetEyeAngles().y;
 
-	// Normalize absolute yaw difference to [0, 180]
+	// Normalize absolute yaw difference to [0, 180].
+	// Eye yaw is in [-180, 180] and VectorAngles yaw is also in [-180, 180],
+	// so the raw fabsf difference can be at most 360. Clamp to 360 first, then
+	// fold the upper half back into [0, 180].
 	float flDiff = fabsf(flViewYaw - flVelocityYaw);
+	if (flDiff > 360.f)
+		flDiff = 360.f;
 	if (flDiff > 180.f)
 		flDiff = 360.f - flDiff;
 
@@ -556,6 +568,11 @@ void CCheaterDetection::Run()
 			// sim-time catch-up on this frame is not mistakenly counted as lag-comp abuse.
 			mData[pPlayer].m_PacketChoking.m_LagComp.m_vBurstTicks.clear();
 			mData[pPlayer].m_PacketChoking.m_LagComp.m_vDeltaCmds.clear();
+			// Also reset position-based detectors: the player may have teleported while
+			// dormant, so the first position delta would produce a spurious speed spike.
+			mData[pPlayer].m_SpeedHack.m_bHasLastPos = false;
+			mData[pPlayer].m_SpeedHack.m_iConsecutiveViolations = 0;
+			mData[pPlayer].m_ReactionTime.m_mFirstVisibleTime.clear();
 		}
 		else if (IsLagCompAbusing(pPlayer, iDeltaTicks))
 			Infract(pPlayer, "lag-comp abuse");
@@ -658,36 +675,40 @@ void CCheaterDetection::ReportDamage(IGameEvent* pEvent)
 
 	if (bHitboxAbuse)
 	{
-		const int iHitGroup = pEvent->GetInt("hitgroup");
-		const bool bIsHeadshot = (iHitGroup == HITGROUP_HEAD);
-		auto& tHitboxAbuse = mData[pEntity].m_HitboxAbuse;
-
-		const float flNow = I::GlobalVars->curtime;
-		const float flWindow = Vars::CheaterDetection::HitboxAbuseWindow.Value;
-
-		// Evict stale events outside the rolling window
-		while (!tHitboxAbuse.m_vHits.empty() && flNow - tHitboxAbuse.m_vHits.front().m_flTime > flWindow)
-			tHitboxAbuse.m_vHits.pop_front();
-
-		tHitboxAbuse.m_vHits.push_back({ flNow, bIsHeadshot });
-
-		const int iSampleSize = Vars::CheaterDetection::HitboxAbuseSampleSize.Value;
-		if (iSampleSize < 1)
-			return;
-		if ((int)tHitboxAbuse.m_vHits.size() >= iSampleSize)
+		// Only track headshot ratio for hitscan weapons — melee hits in TF2 report
+		// a hitgroup but headshots carry no special gameplay meaning for melee,
+		// so counting them would inflate the ratio and produce false positives.
+		if (SDK::GetWeaponType(pWeapon) == EWeaponType::HITSCAN)
 		{
-			int iHeadshots = 0;
-			for (auto& tHit : tHitboxAbuse.m_vHits)
-			{
-				if (tHit.m_bHeadshot)
-					iHeadshots++;
-			}
+			const int iHitGroup = pEvent->GetInt("hitgroup");
+			const bool bIsHeadshot = (iHitGroup == HITGROUP_HEAD);
+			auto& tHitboxAbuse = mData[pEntity].m_HitboxAbuse;
 
-			const float flRatio = (float(iHeadshots) / float(tHitboxAbuse.m_vHits.size())) * 100.f;
-			if (flRatio >= Vars::CheaterDetection::HitboxAbuseThreshold.Value)
+			const float flNow = I::GlobalVars->curtime;
+			const float flWindow = Vars::CheaterDetection::HitboxAbuseWindow.Value;
+
+			// Evict stale events outside the rolling window
+			while (!tHitboxAbuse.m_vHits.empty() && flNow - tHitboxAbuse.m_vHits.front().m_flTime > flWindow)
+				tHitboxAbuse.m_vHits.pop_front();
+
+			tHitboxAbuse.m_vHits.push_back({ flNow, bIsHeadshot });
+
+			const int iSampleSize = Vars::CheaterDetection::HitboxAbuseSampleSize.Value;
+			if (iSampleSize >= 1 && (int)tHitboxAbuse.m_vHits.size() >= iSampleSize)
 			{
-				tHitboxAbuse.m_vHits.clear();
-				tHitboxAbuse.m_bInfract = true;
+				int iHeadshots = 0;
+				for (auto& tHit : tHitboxAbuse.m_vHits)
+				{
+					if (tHit.m_bHeadshot)
+						iHeadshots++;
+				}
+
+				const float flRatio = (float(iHeadshots) / float(tHitboxAbuse.m_vHits.size())) * 100.f;
+				if (flRatio >= Vars::CheaterDetection::HitboxAbuseThreshold.Value)
+				{
+					tHitboxAbuse.m_vHits.clear();
+					tHitboxAbuse.m_bInfract = true;
+				}
 			}
 		}
 	}
