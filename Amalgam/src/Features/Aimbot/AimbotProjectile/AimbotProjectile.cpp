@@ -1008,10 +1008,17 @@ void CAimbotProjectile::CalculateAngle(const Vec3& vLocalPos, const Vec3& vTarge
 		}
 
 		// Adjust effective target to compensate for local player's velocity being added to the projectile.
-		// The projectile drifts by owner_velocity * flight_time, so aim at (target - drift) to hit the real target.
+		// Only correct for the horizontal (XY) component of owner velocity: the vertical component causes
+		// the effective target's Z to drop below ground when the player is jumping, producing a steep
+		// downward pitch and self-damage. Use horizontal distance for the flight-time estimate to keep
+		// the correction proportional to how far the projectile actually travels in the XY plane.
 		Vec3 vEffTarget = vTargetPos;
-		if (!m_tInfo.m_vOwnerVelocity.IsZero() && flVelocity > 0.f)
-			vEffTarget -= m_tInfo.m_vOwnerVelocity * ((vTargetPos - vLocalPos).Length() / flVelocity);
+		float flDist2D = (vTargetPos - vLocalPos).Length2D();
+		if (m_tInfo.m_vOwnerVelocity.Length2DSqr() > 0.f && flVelocity > 0.f && flDist2D > 0.f)
+		{
+			Vec3 vOwnerVel2D = { m_tInfo.m_vOwnerVelocity.x, m_tInfo.m_vOwnerVelocity.y, 0.f };
+			vEffTarget -= vOwnerVel2D * (flDist2D / flVelocity);
+		}
 
 		Vec3 vDelta = vEffTarget - vLocalPos;
 		float flDist = vDelta.Length2D();
@@ -1083,9 +1090,14 @@ void CAimbotProjectile::CalculateAngle(const Vec3& vLocalPos, const Vec3& vTarge
 		SolveProjectileSpeed(m_tInfo.m_pWeapon, m_tProjInfo.m_vPos, vTargetPos, flVelocity, flDragTime, m_tInfo.m_flGravity);
 
 		// Adjust effective target to compensate for local player's velocity being added to the projectile.
+		// Horizontal-only correction: same rationale as the first pass above.
 		Vec3 vEffTarget = vTargetPos;
-		if (!m_tInfo.m_vOwnerVelocity.IsZero() && flVelocity > 0.f)
-			vEffTarget -= m_tInfo.m_vOwnerVelocity * ((vTargetPos - m_tProjInfo.m_vPos).Length() / flVelocity);
+		float flDist2D = (vTargetPos - m_tProjInfo.m_vPos).Length2D();
+		if (m_tInfo.m_vOwnerVelocity.Length2DSqr() > 0.f && flVelocity > 0.f && flDist2D > 0.f)
+		{
+			Vec3 vOwnerVel2D = { m_tInfo.m_vOwnerVelocity.x, m_tInfo.m_vOwnerVelocity.y, 0.f };
+			vEffTarget -= vOwnerVel2D * (flDist2D / flVelocity);
+		}
 
 		Vec3 vDelta = vEffTarget - m_tProjInfo.m_vPos;
 		float flDist = vDelta.Length2D();
