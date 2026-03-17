@@ -55,6 +55,36 @@ struct PlayerInfo
 		std::unordered_map<int, float> m_mFirstAimTime = {}; // entity index -> curtime when attacker first aimed at their head
 		bool m_bInfract = false;
 	} m_TriggerBot;
+
+	struct HitboxAbuse_t
+	{
+		struct HitEvent_t
+		{
+			float m_flTime;
+			bool m_bHeadshot;
+		};
+		std::deque<HitEvent_t> m_vHits = {}; // rolling window of hit events
+		bool m_bInfract = false;
+	} m_HitboxAbuse;
+
+	struct SpeedHack_t
+	{
+		Vec3 m_vLastPos = {};
+		float m_flLastTime = 0.f;
+		bool m_bHasLastPos = false;
+		int m_iConsecutiveViolations = 0;
+	} m_SpeedHack;
+
+	struct ReactionTime_t
+	{
+		std::unordered_map<int, float> m_mFirstVisibleTime = {}; // entity index -> curtime when attacker first had LOS to victim
+		bool m_bInfract = false;
+	} m_ReactionTime;
+
+	struct AntiAim_t
+	{
+		int m_iConsecutiveTicks = 0;
+	} m_AntiAim;
 };
 
 class CCheaterDetection
@@ -72,6 +102,12 @@ private:
 
 	bool IsTriggerBot(CTFPlayer* pEntity);
 	void TrackTriggerBot(CTFPlayer* pEntity);
+
+	bool IsHitboxAbusing(CTFPlayer* pEntity);
+	bool IsSpeedHacking(CTFPlayer* pEntity, float flDeltaTime);
+	void TrackReactionTime(CTFPlayer* pEntity);
+	bool IsReactionTimeAnomaly(CTFPlayer* pEntity);
+	bool IsAntiAiming(CTFPlayer* pEntity);
 
 	void Infract(CTFPlayer* pEntity, const char* sReason);
 

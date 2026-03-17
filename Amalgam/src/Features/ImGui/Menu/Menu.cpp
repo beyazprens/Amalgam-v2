@@ -2177,6 +2177,31 @@ void CMenu::MenuAnticheat(int iTab)
 				FSlider(Vars::CheaterDetection::TriggerBotMaxFOV, FSliderEnum::Right);
 			}
 			PopTransparent();
+			PushTransparent(!(Vars::CheaterDetection::Methods.Value & Vars::CheaterDetection::MethodsEnum::HitboxAbuse));
+			{
+				FSlider(Vars::CheaterDetection::HitboxAbuseThreshold, FSliderEnum::Left);
+				FSlider(Vars::CheaterDetection::HitboxAbuseSampleSize, FSliderEnum::Right);
+				FSlider(Vars::CheaterDetection::HitboxAbuseWindow);
+			}
+			PopTransparent();
+			PushTransparent(!(Vars::CheaterDetection::Methods.Value & Vars::CheaterDetection::MethodsEnum::SpeedHack));
+			{
+				FSlider(Vars::CheaterDetection::SpeedHackMaxVelocity, FSliderEnum::Left);
+				FSlider(Vars::CheaterDetection::SpeedHackConsecutive, FSliderEnum::Right);
+			}
+			PopTransparent();
+			PushTransparent(!(Vars::CheaterDetection::Methods.Value & Vars::CheaterDetection::MethodsEnum::ReactionTime));
+			{
+				FSlider(Vars::CheaterDetection::ReactionTimeThreshold);
+			}
+			PopTransparent();
+			PushTransparent(!(Vars::CheaterDetection::Methods.Value & Vars::CheaterDetection::MethodsEnum::AntiAim));
+			{
+				FSlider(Vars::CheaterDetection::AntiAimMinDeviation, FSliderEnum::Left);
+				FSlider(Vars::CheaterDetection::AntiAimMaxDeviation, FSliderEnum::Right);
+				FSlider(Vars::CheaterDetection::AntiAimConsecutive);
+			}
+			PopTransparent();
 		}
 		EndSection();
 		break;

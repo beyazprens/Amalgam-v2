@@ -566,8 +566,8 @@ NAMESPACE_BEGIN(Vars)
 
 	NAMESPACE_BEGIN(CheaterDetection, Cheater Detection)
 		CVarEnum(Methods, "Detection methods", 0b000000, DROPDOWN_MULTI, nullptr,
-			VA_LIST("Invalid pitch", "Packet choking", "Aim flicking", "Duck Speed", "Lagcomp abuse", "Critbucket", "Triggerbot"),
-			InvalidPitch = 1 << 0, PacketChoking = 1 << 1, AimFlicking = 1 << 2, DuckSpeed = 1 << 3, LagCompAbuse = 1 << 4, CritManipulation = 1 << 5, TriggerBot = 1 << 6);
+			VA_LIST("Invalid pitch", "Packet choking", "Aim flicking", "Duck Speed", "Lagcomp abuse", "Critbucket", "Triggerbot", "Hitbox abuse", "Speed hack", "Reaction time", "Anti-aim"),
+			InvalidPitch = 1 << 0, PacketChoking = 1 << 1, AimFlicking = 1 << 2, DuckSpeed = 1 << 3, LagCompAbuse = 1 << 4, CritManipulation = 1 << 5, TriggerBot = 1 << 6, HitboxAbuse = 1 << 7, SpeedHack = 1 << 8, ReactionTime = 1 << 9, AntiAim = 1 << 10);
 		CVar(DetectionsRequired, "Detections required", 10, SLIDER_MIN, 0, 50);
 		CVar(MinimumChoking, "Minimum choking", 20, SLIDER_MIN, 4, 22);
 		CVar(MinimumFlick, "Minimum flick angle", 20.f, SLIDER_PRECISION, 10.f, 30.f); // min flick size to suspect
@@ -579,6 +579,15 @@ NAMESPACE_BEGIN(Vars)
 		CVar(CritThreshold, "Crit rate threshold", 85.f, SLIDER_PRECISION, 50.f, 100.f, 5.f);
 		CVar(TriggerBotMaxReactionTime, "Triggerbot max reaction time", 100, SLIDER_MIN, 10, 500); // ms
 		CVar(TriggerBotMaxFOV, "Triggerbot max FOV", 5.f, SLIDER_PRECISION, 1.f, 30.f);
+		CVar(HitboxAbuseThreshold, "Hitbox abuse HS threshold", 92.f, SLIDER_PRECISION, 70.f, 100.f, 1.f); // % headshot ratio
+		CVar(HitboxAbuseSampleSize, "Hitbox abuse sample size", 20, SLIDER_MIN, 10, 50); // minimum damage events
+		CVar(HitboxAbuseWindow, "Hitbox abuse window", 60.f, SLIDER_PRECISION, 10.f, 120.f, 5.f); // rolling window in seconds
+		CVar(SpeedHackMaxVelocity, "Speed hack max velocity", 676.f, SLIDER_PRECISION, 400.f, 1200.f, 10.f); // units/sec
+		CVar(SpeedHackConsecutive, "Speed hack consecutive", 3, SLIDER_MIN, 2, 6); // consecutive violations required
+		CVar(ReactionTimeThreshold, "Reaction time threshold", 50, SLIDER_MIN, 10, 150); // ms, below = flag
+		CVar(AntiAimMinDeviation, "Anti-aim min deviation", 150.f, SLIDER_PRECISION, 90.f, 180.f, 5.f); // degrees
+		CVar(AntiAimMaxDeviation, "Anti-aim max deviation", 210.f, SLIDER_PRECISION, 180.f, 270.f, 5.f); // degrees
+		CVar(AntiAimConsecutive, "Anti-aim consecutive ticks", 2, SLIDER_MIN, 2, 6); // consecutive ticks required
 	NAMESPACE_END(CheaterDetection)
 
 	NAMESPACE_BEGIN(ESP)

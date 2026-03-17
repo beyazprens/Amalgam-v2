@@ -228,6 +228,212 @@ void CCheaterDetection::TrackTriggerBot(CTFPlayer* pEntity)
 	}
 }
 
+bool CCheaterDetection::IsHitboxAbusing(CTFPlayer* pEntity)
+{
+	auto& tHitboxAbuse = mData[pEntity].m_HitboxAbuse;
+	if (!(Vars::CheaterDetection::Methods.Value & Vars::CheaterDetection::MethodsEnum::HitboxAbuse))
+	{
+		tHitboxAbuse = {};
+		return false;
+	}
+
+	bool bReturn = tHitboxAbuse.m_bInfract;
+	tHitboxAbuse.m_bInfract = false;
+	return bReturn;
+}
+
+bool CCheaterDetection::IsSpeedHacking(CTFPlayer* pEntity, float flDeltaTime)
+{
+	auto& tSpeedHack = mData[pEntity].m_SpeedHack;
+	if (!(Vars::CheaterDetection::Methods.Value & Vars::CheaterDetection::MethodsEnum::SpeedHack))
+	{
+		tSpeedHack = {};
+		return false;
+	}
+
+	// Only check grounded players — airborne movement can have large Z-velocity from jumps
+	if (!pEntity->IsOnGround())
+	{
+		tSpeedHack.m_bHasLastPos = false;
+		tSpeedHack.m_iConsecutiveViolations = 0;
+		return false;
+	}
+
+	// Skip players under a speed-altering condition (e.g. Bonk, Halloween speed boost)
+	if (pEntity->InCond(TF_COND_SPEED_BOOST) || pEntity->InCond(TF_COND_HALLOWEEN_SPEED_BOOST))
+	{
+		tSpeedHack.m_bHasLastPos = false;
+		tSpeedHack.m_iConsecutiveViolations = 0;
+		return false;
+	}
+
+	const Vec3 vCurrPos = pEntity->m_vecOrigin();
+
+	if (!tSpeedHack.m_bHasLastPos || flDeltaTime <= 0.f)
+	{
+		tSpeedHack.m_vLastPos = vCurrPos;
+		tSpeedHack.m_flLastTime = I::GlobalVars->curtime;
+		tSpeedHack.m_bHasLastPos = true;
+		tSpeedHack.m_iConsecutiveViolations = 0;
+		return false;
+	}
+
+	// Compute horizontal speed from position delta to avoid relying on the (potentially spoofed) velocity netvar
+	const Vec3 vDelta = vCurrPos - tSpeedHack.m_vLastPos;
+	const float flHorizSpeed = Vec3(vDelta.x, vDelta.y, 0.f).Length() / flDeltaTime;
+
+	tSpeedHack.m_vLastPos = vCurrPos;
+	tSpeedHack.m_flLastTime = I::GlobalVars->curtime;
+
+	const float flThreshold = Vars::CheaterDetection::SpeedHackMaxVelocity.Value;
+	if (flHorizSpeed > flThreshold)
+	{
+		tSpeedHack.m_iConsecutiveViolations++;
+		if (tSpeedHack.m_iConsecutiveViolations >= Vars::CheaterDetection::SpeedHackConsecutive.Value)
+		{
+			tSpeedHack.m_iConsecutiveViolations = 0;
+			return true;
+		}
+	}
+	else
+	{
+		tSpeedHack.m_iConsecutiveViolations = 0;
+	}
+
+	return false;
+}
+
+void CCheaterDetection::TrackReactionTime(CTFPlayer* pEntity)
+{
+	auto& tReactionTime = mData[pEntity].m_ReactionTime;
+	if (!(Vars::CheaterDetection::Methods.Value & Vars::CheaterDetection::MethodsEnum::ReactionTime))
+	{
+		tReactionTime.m_mFirstVisibleTime.clear();
+		return;
+	}
+
+	// Only track players who can deal hitscan damage (not cloaked spies, etc.)
+	auto pWeapon = pEntity->m_hActiveWeapon()->As<CTFWeaponBase>();
+	if (!pWeapon)
+	{
+		tReactionTime.m_mFirstVisibleTime.clear();
+		return;
+	}
+
+	switch (SDK::GetWeaponType(pWeapon))
+	{
+	case EWeaponType::HITSCAN:
+		break; // only track hitscan weapons for reaction time
+	default:
+		tReactionTime.m_mFirstVisibleTime.clear();
+		return;
+	}
+
+	const Vec3 vEyePos = pEntity->m_vecOrigin() + pEntity->GetViewOffset();
+	const Vec3 vEyeAngles = pEntity->GetEyeAngles();
+
+	std::unordered_set<int> currentVisible;
+
+	for (auto& pEnemyEntity : H::Entities.GetGroup(EntityEnum::PlayerAll))
+	{
+		auto pEnemy = pEnemyEntity->As<CTFPlayer>();
+		if (!pEnemy || pEnemy == pEntity)
+			continue;
+		if (pEnemy->IsDormant() || !pEnemy->IsAlive() || pEnemy->IsAGhost())
+			continue;
+		if (pEnemy->m_iTeamNum() == pEntity->m_iTeamNum())
+			continue;
+
+		const int iEnemyIndex = pEnemy->entindex();
+		const Vec3 vHeadPos = pEnemy->m_vecOrigin() + pEnemy->GetViewOffset();
+
+		// Require both line-of-sight and that the enemy is within roughly the attacker's FOV
+		if (!SDK::VisPos(pEntity, pEnemy, vEyePos, vHeadPos))
+			continue;
+
+		const Vec3 vAngleTo = Math::CalcAngle(vEyePos, vHeadPos);
+		if (Math::CalcFov(vEyeAngles, vAngleTo) > 60.f)
+			continue;
+
+		currentVisible.insert(iEnemyIndex);
+		if (tReactionTime.m_mFirstVisibleTime.find(iEnemyIndex) == tReactionTime.m_mFirstVisibleTime.end())
+			tReactionTime.m_mFirstVisibleTime[iEnemyIndex] = I::GlobalVars->curtime;
+	}
+
+	// Remove enemies that are no longer visible
+	for (auto it = tReactionTime.m_mFirstVisibleTime.begin(); it != tReactionTime.m_mFirstVisibleTime.end();)
+	{
+		if (currentVisible.find(it->first) == currentVisible.end())
+			it = tReactionTime.m_mFirstVisibleTime.erase(it);
+		else
+			++it;
+	}
+}
+
+bool CCheaterDetection::IsReactionTimeAnomaly(CTFPlayer* pEntity)
+{
+	auto& tReactionTime = mData[pEntity].m_ReactionTime;
+	if (!(Vars::CheaterDetection::Methods.Value & Vars::CheaterDetection::MethodsEnum::ReactionTime))
+	{
+		tReactionTime = {};
+		return false;
+	}
+
+	bool bReturn = tReactionTime.m_bInfract;
+	tReactionTime.m_bInfract = false;
+	return bReturn;
+}
+
+bool CCheaterDetection::IsAntiAiming(CTFPlayer* pEntity)
+{
+	auto& tAntiAim = mData[pEntity].m_AntiAim;
+	if (!(Vars::CheaterDetection::Methods.Value & Vars::CheaterDetection::MethodsEnum::AntiAim))
+	{
+		tAntiAim = {};
+		return false;
+	}
+
+	// Need significant horizontal velocity to compare against — ignore near-stationary players
+	const Vec3 vVelocity = pEntity->m_vecVelocity();
+	const float flSpeed2D = vVelocity.Length2D();
+	if (flSpeed2D < 50.f)
+	{
+		tAntiAim.m_iConsecutiveTicks = 0;
+		return false;
+	}
+
+	// Convert velocity direction to a yaw angle
+	const float flVelocityYaw = Math::VectorAngles(Vec3(vVelocity.x, vVelocity.y, 0.f)).y;
+	const float flViewYaw = pEntity->GetEyeAngles().y;
+
+	// Normalize absolute yaw difference to [0, 180]
+	float flDiff = fabsf(flViewYaw - flVelocityYaw);
+	if (flDiff > 180.f)
+		flDiff = 360.f - flDiff;
+
+	const float flMin = Vars::CheaterDetection::AntiAimMinDeviation.Value;
+	const float flMax = Vars::CheaterDetection::AntiAimMaxDeviation.Value;
+
+	// flDiff is in [0, 180], so cap flMax at 180 for the comparison
+	const float flMaxClamped = std::min(flMax, 180.f);
+
+	if (flDiff >= flMin && flDiff <= flMaxClamped)
+	{
+		tAntiAim.m_iConsecutiveTicks++;
+		if (tAntiAim.m_iConsecutiveTicks >= Vars::CheaterDetection::AntiAimConsecutive.Value)
+		{
+			tAntiAim.m_iConsecutiveTicks = 0;
+			return true;
+		}
+	}
+	else
+	{
+		tAntiAim.m_iConsecutiveTicks = 0;
+	}
+
+	return false;
+}
+
 void CCheaterDetection::TrackCritEvent(CTFPlayer* pEntity, CTFWeaponBase* pWeapon, bool bCrit)
 {
 	if (!(Vars::CheaterDetection::Methods.Value & Vars::CheaterDetection::MethodsEnum::CritManipulation) || !pWeapon)
@@ -316,6 +522,10 @@ void CCheaterDetection::Run()
 			mData[pPlayer].m_DuckSpeed = {};
 			mData[pPlayer].m_CritTracker = {};
 			mData[pPlayer].m_TriggerBot = {};
+			mData[pPlayer].m_HitboxAbuse = {};
+			mData[pPlayer].m_SpeedHack = {};
+			mData[pPlayer].m_ReactionTime = {};
+			mData[pPlayer].m_AntiAim = {};
 			continue;
 		}
 
@@ -354,6 +564,15 @@ void CCheaterDetection::Run()
 		TrackTriggerBot(pPlayer);
 		if (IsTriggerBot(pPlayer))
 			Infract(pPlayer, "triggerbot");
+		if (IsHitboxAbusing(pPlayer))
+			Infract(pPlayer, "hitbox abuse");
+		if (IsSpeedHacking(pPlayer, flDeltaTime))
+			Infract(pPlayer, "speed hack");
+		TrackReactionTime(pPlayer);
+		if (IsReactionTimeAnomaly(pPlayer))
+			Infract(pPlayer, "reaction time anomaly");
+		if (IsAntiAiming(pPlayer))
+			Infract(pPlayer, "anti-aim");
 	}
 }
 
@@ -387,7 +606,9 @@ void CCheaterDetection::ReportDamage(IGameEvent* pEvent)
 	const bool bAimFlicking = Vars::CheaterDetection::Methods.Value & Vars::CheaterDetection::MethodsEnum::AimFlicking;
 	const bool bCritTracking = Vars::CheaterDetection::Methods.Value & Vars::CheaterDetection::MethodsEnum::CritManipulation;
 	const bool bTriggerBot = Vars::CheaterDetection::Methods.Value & Vars::CheaterDetection::MethodsEnum::TriggerBot;
-	if (!bAimFlicking && !bCritTracking && !bTriggerBot)
+	const bool bHitboxAbuse = Vars::CheaterDetection::Methods.Value & Vars::CheaterDetection::MethodsEnum::HitboxAbuse;
+	const bool bReactionTime = Vars::CheaterDetection::Methods.Value & Vars::CheaterDetection::MethodsEnum::ReactionTime;
+	if (!bAimFlicking && !bCritTracking && !bTriggerBot && !bHitboxAbuse && !bReactionTime)
 		return;
 
 	int iIndex = I::EngineClient->GetPlayerForUserID(pEvent->GetInt("attacker"));
@@ -432,6 +653,57 @@ void CCheaterDetection::ReportDamage(IGameEvent* pEvent)
 					tTriggerBot.m_bInfract = true;
 				tTriggerBot.m_mFirstAimTime.erase(it);
 			}
+		}
+	}
+
+	if (bHitboxAbuse)
+	{
+		const int iHitGroup = pEvent->GetInt("hitgroup");
+		const bool bIsHeadshot = (iHitGroup == HITGROUP_HEAD);
+		auto& tHitboxAbuse = mData[pEntity].m_HitboxAbuse;
+
+		const float flNow = I::GlobalVars->curtime;
+		const float flWindow = Vars::CheaterDetection::HitboxAbuseWindow.Value;
+
+		// Evict stale events outside the rolling window
+		while (!tHitboxAbuse.m_vHits.empty() && flNow - tHitboxAbuse.m_vHits.front().m_flTime > flWindow)
+			tHitboxAbuse.m_vHits.pop_front();
+
+		tHitboxAbuse.m_vHits.push_back({ flNow, bIsHeadshot });
+
+		const int iSampleSize = Vars::CheaterDetection::HitboxAbuseSampleSize.Value;
+		if (iSampleSize < 1)
+			return;
+		if ((int)tHitboxAbuse.m_vHits.size() >= iSampleSize)
+		{
+			int iHeadshots = 0;
+			for (auto& tHit : tHitboxAbuse.m_vHits)
+			{
+				if (tHit.m_bHeadshot)
+					iHeadshots++;
+			}
+
+			const float flRatio = (float(iHeadshots) / float(tHitboxAbuse.m_vHits.size())) * 100.f;
+			if (flRatio >= Vars::CheaterDetection::HitboxAbuseThreshold.Value)
+			{
+				tHitboxAbuse.m_vHits.clear();
+				tHitboxAbuse.m_bInfract = true;
+			}
+		}
+	}
+
+	if (bReactionTime)
+	{
+		const int iVictimIndex = I::EngineClient->GetPlayerForUserID(pEvent->GetInt("userid"));
+		auto& tReactionTime = mData[pEntity].m_ReactionTime;
+		auto it = tReactionTime.m_mFirstVisibleTime.find(iVictimIndex);
+		if (it != tReactionTime.m_mFirstVisibleTime.end())
+		{
+			const float flThreshold = Vars::CheaterDetection::ReactionTimeThreshold.Value / 1000.f;
+			const float flReactionTime = I::GlobalVars->curtime - it->second;
+			if (flReactionTime >= 0.f && flReactionTime < flThreshold)
+				tReactionTime.m_bInfract = true;
+			tReactionTime.m_mFirstVisibleTime.erase(it);
 		}
 	}
 }
