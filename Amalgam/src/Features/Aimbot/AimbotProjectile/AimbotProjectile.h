@@ -23,6 +23,7 @@ struct Info_t
 	Vec3 m_vHull = {};
 	Vec3 m_vOffset = {};
 	Vec3 m_vAngFix = {};
+	Vec3 m_vOwnerVelocity = {};
 	float m_flVelocity = 0.f;
 	float m_flGravity = 0.f;
 	float m_flRadius = 0.f;

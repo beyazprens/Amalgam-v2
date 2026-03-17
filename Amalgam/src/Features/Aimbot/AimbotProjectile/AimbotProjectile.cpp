@@ -1007,10 +1007,16 @@ void CAimbotProjectile::CalculateAngle(const Vec3& vLocalPos, const Vec3& vTarge
 			SolveProjectileSpeed(m_tInfo.m_pWeapon, vShootPos, vTargetPos, flVelocity, flDragTime, m_tInfo.m_flGravity);
 		}
 
-		Vec3 vDelta = vTargetPos - vLocalPos;
+		// Adjust effective target to compensate for local player's velocity being added to the projectile.
+		// The projectile drifts by owner_velocity * flight_time, so aim at (target - drift) to hit the real target.
+		Vec3 vEffTarget = vTargetPos;
+		if (!m_tInfo.m_vOwnerVelocity.IsZero() && flVelocity > 0.f)
+			vEffTarget -= m_tInfo.m_vOwnerVelocity * ((vTargetPos - vLocalPos).Length() / flVelocity);
+
+		Vec3 vDelta = vEffTarget - vLocalPos;
 		float flDist = vDelta.Length2D();
 
-		Vec3 vAngleTo = Math::CalcAngle(vLocalPos, vTargetPos);
+		Vec3 vAngleTo = Math::CalcAngle(vLocalPos, vEffTarget);
 		if (!flGrav)
 			flPitch = -DEG2RAD(vAngleTo.x);
 		else
@@ -1076,10 +1082,15 @@ void CAimbotProjectile::CalculateAngle(const Vec3& vLocalPos, const Vec3& vTarge
 		float flVelocity = m_tInfo.m_flVelocity, flDragTime = 0.f;
 		SolveProjectileSpeed(m_tInfo.m_pWeapon, m_tProjInfo.m_vPos, vTargetPos, flVelocity, flDragTime, m_tInfo.m_flGravity);
 
-		Vec3 vDelta = vTargetPos - m_tProjInfo.m_vPos;
+		// Adjust effective target to compensate for local player's velocity being added to the projectile.
+		Vec3 vEffTarget = vTargetPos;
+		if (!m_tInfo.m_vOwnerVelocity.IsZero() && flVelocity > 0.f)
+			vEffTarget -= m_tInfo.m_vOwnerVelocity * ((vTargetPos - m_tProjInfo.m_vPos).Length() / flVelocity);
+
+		Vec3 vDelta = vEffTarget - m_tProjInfo.m_vPos;
 		float flDist = vDelta.Length2D();
 
-		Vec3 vAngleTo = Math::CalcAngle(m_tProjInfo.m_vPos, vTargetPos);
+		Vec3 vAngleTo = Math::CalcAngle(m_tProjInfo.m_vPos, vEffTarget);
 		if (!flGrav)
 			tOut.m_flPitch = -DEG2RAD(vAngleTo.x);
 		else
@@ -1519,6 +1530,7 @@ int CAimbotProjectile::CanHit(Target_t& tTarget, CTFPlayer* pLocal, CTFWeaponBas
 	Vec3 vVelocity = F::ProjSim.GetVelocity();
 	m_tInfo.m_flVelocity = vVelocity.Length();
 	m_tInfo.m_vAngFix = Math::VectorAngles(vVelocity);
+	m_tInfo.m_vOwnerVelocity = pLocal->m_vecVelocity();
 
 	m_tInfo.m_vHull = m_tProjInfo.m_vHull.Min(3);
 	m_tInfo.m_vOffset = m_tProjInfo.m_vPos - m_tInfo.m_vLocalEye; m_tInfo.m_vOffset.y *= -1;

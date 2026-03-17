@@ -550,6 +550,14 @@ bool CProjectileSimulation::Initialize(ProjectileInfo& tProjInfo, bool bSimulate
 		if (bSimulate && !F::ProjSim.m_pObj->IsDragEnabled() && m_pObj->m_dragBasis.IsZero()) // don't include vphysics projectiles
 			vVelocity.z += 400.f * tProjInfo.m_flGravity * TICK_INTERVAL; // i don't know why this makes it more accurate but it does
 
+		// Add owner velocity for accurate simulation: TF2 adds the firing player's velocity to the projectile's initial velocity.
+		// Applies to non-flamethrower projectile types when simulating (not custom or flamethrower which have special handling).
+		// Only for new projectiles (!bWorld); projectiles already in the world have their velocity already set.
+		if (!bWorld && bSimulate && tProjInfo.m_pOwner
+			&& tProjInfo.m_uType != FNV1A::Hash32Const("particles/flamethrower.pcf")
+			&& tProjInfo.m_uType != FNV1A::Hash32Const("custom"))
+			vVelocity += tProjInfo.m_pOwner->m_vecVelocity();
+
 		m_pObj->SetPosition(tProjInfo.m_vPos, tProjInfo.m_vAng, true);
 		m_pObj->SetVelocity(&vVelocity, &vAngularVelocity);
 	}
