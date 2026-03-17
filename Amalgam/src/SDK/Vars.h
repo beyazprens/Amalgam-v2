@@ -585,9 +585,8 @@ NAMESPACE_BEGIN(Vars)
 		CVar(SpeedHackMaxVelocity, "Speed hack max velocity", 676.f, SLIDER_PRECISION, 400.f, 1200.f, 10.f); // units/sec
 		CVar(SpeedHackConsecutive, "Speed hack consecutive", 3, SLIDER_MIN, 2, 6); // consecutive violations required
 		CVar(ReactionTimeThreshold, "Reaction time threshold", 50, SLIDER_MIN, 10, 150); // ms, below = flag
-		CVar(AntiAimMinDeviation, "Anti-aim min deviation", 150.f, SLIDER_PRECISION, 90.f, 180.f, 5.f); // degrees
-		CVar(AntiAimMaxDeviation, "Anti-aim max deviation", 180.f, SLIDER_PRECISION, 90.f, 180.f, 5.f); // degrees — normalized diff is always in [0,180]
-		CVar(AntiAimConsecutive, "Anti-aim consecutive ticks", 2, SLIDER_MIN, 2, 6); // consecutive ticks required
+		CVar(AntiAimMinSpinRate, "Anti-aim min spin rate", 90.f, SLIDER_PRECISION, 45.f, 180.f, 5.f); // degrees per tick; spinbots rotate 90-180°/tick
+		CVar(AntiAimConsecutive, "Anti-aim consecutive ticks", 3, SLIDER_MIN, 2, 10); // consecutive ticks required
 	NAMESPACE_END(CheaterDetection)
 
 	NAMESPACE_BEGIN(ESP)

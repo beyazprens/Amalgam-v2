@@ -400,30 +400,31 @@ bool CCheaterDetection::IsAntiAiming(CTFPlayer* pEntity)
 		return false;
 	}
 
-	// Need significant horizontal velocity to compare against — ignore near-stationary players
-	const Vec3 vVelocity = pEntity->m_vecVelocity();
-	const float flSpeed2D = vVelocity.Length2D();
-	if (flSpeed2D < 50.f)
+	const float flCurrYaw = pEntity->GetEyeAngles().y;
+
+	// Seed the tracker on first observation
+	if (!tAntiAim.m_bHasLastYaw)
 	{
-		tAntiAim.m_iConsecutiveTicks = 0;
+		tAntiAim.m_flLastYaw = flCurrYaw;
+		tAntiAim.m_bHasLastYaw = true;
 		return false;
 	}
 
-	// Convert velocity direction to a yaw angle
-	const float flVelocityYaw = Math::VectorAngles(Vec3(vVelocity.x, vVelocity.y, 0.f)).y;
-	const float flViewYaw = pEntity->GetEyeAngles().y;
+	// Compute shortest angular distance between this tick and the previous one.
+	// fabsf gives a raw diff in [0, 360]; fold values > 180 back to [0, 180]
+	// to handle the wrap-around case (e.g. 179° → -179° = 2° real rotation).
+	// Use >= 180 so the boundary value is folded correctly rather than left as-is.
+	float flDelta = fabsf(flCurrYaw - tAntiAim.m_flLastYaw);
+	if (flDelta >= 180.f)
+		flDelta = 360.f - flDelta;
 
-	// Normalize absolute yaw difference to [0, 180].
-	// Both angles are in [-180, 180]. When they straddle the ±180 wrap boundary
-	// (e.g. -170 vs +170) fabsf gives 340; fold those values back to [0, 180].
-	float flDiff = fabsf(flViewYaw - flVelocityYaw);
-	if (flDiff > 180.f)
-		flDiff = 360.f - flDiff;
+	tAntiAim.m_flLastYaw = flCurrYaw;
 
-	const float flMin = Vars::CheaterDetection::AntiAimMinDeviation.Value;
-	const float flMax = Vars::CheaterDetection::AntiAimMaxDeviation.Value;
-
-	if (flDiff >= flMin && flDiff <= flMax)
+	// A real spinbot rotates the yaw by a large amount every single tick.
+	// Even high-DPI mice at high sensitivity can produce 30–60° in a single
+	// fast flick, but no legitimate player sustains 90°+ per tick across
+	// multiple consecutive ticks — that is exclusively spinbot territory.
+	if (flDelta >= Vars::CheaterDetection::AntiAimMinSpinRate.Value)
 	{
 		tAntiAim.m_iConsecutiveTicks++;
 		if (tAntiAim.m_iConsecutiveTicks >= Vars::CheaterDetection::AntiAimConsecutive.Value)

@@ -2197,8 +2197,7 @@ void CMenu::MenuAnticheat(int iTab)
 			PopTransparent();
 			PushTransparent(!(Vars::CheaterDetection::Methods.Value & Vars::CheaterDetection::MethodsEnum::AntiAim));
 			{
-				FSlider(Vars::CheaterDetection::AntiAimMinDeviation, FSliderEnum::Left);
-				FSlider(Vars::CheaterDetection::AntiAimMaxDeviation, FSliderEnum::Right);
+				FSlider(Vars::CheaterDetection::AntiAimMinSpinRate);
 				FSlider(Vars::CheaterDetection::AntiAimConsecutive);
 			}
 			PopTransparent();

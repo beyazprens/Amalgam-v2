@@ -83,6 +83,8 @@ struct PlayerInfo
 
 	struct AntiAim_t
 	{
+		float m_flLastYaw = 0.f;
+		bool m_bHasLastYaw = false;
 		int m_iConsecutiveTicks = 0;
 	} m_AntiAim;
 };
