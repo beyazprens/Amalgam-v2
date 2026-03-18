@@ -9,28 +9,31 @@ Read about the original Amalgam documentation and features [here](https://github
 Note: This repository is based on **TheGameEnhancer2004's fork** of Amalgam and includes additional changes and improvements.
 
 **Thanks @mlemlody for the crashfix.**
-  
+</div>
+
 ## Changes I've Made
 
-- Added **Smart Airblast**. (Sometimes works EXPERIMENTAL) automatically airblasts incoming critical projectiles.
-- Added **Sniper Triggerbot Detection** to Cheater Detection. Detects players who instantly headshot enemies peeking while scoped. headshot timing.
-- Added **Legit Mode** Auto-Detonate. Automatically detonates explosives when enemies are in direct line-of-sight.
-- Added **Select Projectiles Auto-Airblast**.
-- Improved **Auto-switch Crossbow logic** to avoid interrupting Uber.
+- Added **Smart Airblast** (Experimental) Automatically prioritizes reflecting lethal and critical projectiles.
+- Added Sniper **Triggerbot Detection**: Analyzes reaction times to detect instant headshots on enemies peeking while scoped.
+- Added Legit Mode for **Auto-Detonate** (Requires Line-of-Sight).
+- Added Projectile Filtering for **Auto-Airblast**.
+- Fixed **Auto-Crossbow** interrupting active UberCharges.
+- Improved **Crossbow Auto-switch**: Added invulnerability check.
+- Fixed **Auto Detonate** triggering unwanted airblasts during weapon switch.
+- Fixed **Lag-compensation** abuse false positives.
 - Optimized **SmoothVelocity** to prevent FPS drops.
-- Improved **Auto-Airblast Redirect**.
-- Improved **Auto Detonate**.
-- Fixed **Medic Auto-arrow shoots like silent aimbot and FOV bypass**.
-- Fixed **Lag-compensation abuse false positives**.
-
-
-
-### Changes
 - Changed default value of **Auto Abandon if no navmesh** to `false`.
+- Improved **Projectile Aimbot**: Added exponential drag decay and dynamic ToF-based smoothing.
+- Fixed Rescue Ranger **Auto-Repair** aim height and added per-building type filtering.
 
+> **Integrated 11 Neo64 Core Features:**
+> *   **Adaptive Resolver:** Learns from misses to fix enemy fake angles.
+> *   **Swing Prediction:** Perfect timing for melee attacks.
+> *   **ThreadPool:** Multi-threaded performance optimization.
+> *   **Aim Smoothing:** More natural, human-like aim movement.
+> *   **New Infrastructure:** Refactored Hooking, Config, and Event systems.
+> **- Modernized Core Architecture:**
+> *   **Hash-based NetVars:** Replaced string lookups with compile-time FNV1A hashing for 0ms overhead.
+> *   **Lifecycle Management:** Standardized feature initialization using `HasLoad`, `HasUnload`, and `InstTracker`.
+> *   **Performance:** Faster game event handling and memory management via `MAKE_UNIQUE`.
 
-
-### Cleanup
-- Cleaned up **README**.
-
-</div>
