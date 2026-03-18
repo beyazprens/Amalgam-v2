@@ -3,6 +3,10 @@
 #include <cstddef>
 #include <string.h>
 
+// Compile-time hash macros: evaluate FNV1A hashes of string literals at compile time
+#define HASH_CT(str)    (FNV1A::Hash32Const(str))
+#define HASH_64_CT(str) (FNV1A::Hash64Const(str))
+
 namespace FNV1A
 {
 	inline constexpr uint32_t uHash32 = 0x811C9DC5;

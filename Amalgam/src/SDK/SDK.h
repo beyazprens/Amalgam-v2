@@ -19,6 +19,7 @@
 #include "../Utils/Math/Math.h"
 #include "../Utils/Timer/Timer.h"
 #include "../Utils/Macros/Macros.h"
+#include "../Utils/Lifecycle/Lifecycle.h"
 #include <intrin.h>
 
 #define DEFAULT_COLOR		Color_t(175, 150, 255, 255)
