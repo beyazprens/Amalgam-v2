@@ -151,6 +151,7 @@ void CCheaterDetection::TrackTriggerBot(CTFPlayer* pEntity)
 	if (!(Vars::CheaterDetection::Methods.Value & Vars::CheaterDetection::MethodsEnum::TriggerBot))
 	{
 		tTriggerBot.m_mFirstAimTime.clear();
+		tTriggerBot.m_dSuspiciousShots.clear();
 		return;
 	}
 
@@ -158,6 +159,7 @@ void CCheaterDetection::TrackTriggerBot(CTFPlayer* pEntity)
 	if (pEntity->m_iClass() != TF_CLASS_SNIPER)
 	{
 		tTriggerBot.m_mFirstAimTime.clear();
+		tTriggerBot.m_dSuspiciousShots.clear();
 		return;
 	}
 
@@ -166,6 +168,7 @@ void CCheaterDetection::TrackTriggerBot(CTFPlayer* pEntity)
 	if (!pWeapon)
 	{
 		tTriggerBot.m_mFirstAimTime.clear();
+		tTriggerBot.m_dSuspiciousShots.clear();
 		return;
 	}
 
@@ -178,6 +181,7 @@ void CCheaterDetection::TrackTriggerBot(CTFPlayer* pEntity)
 	else
 	{
 		tTriggerBot.m_mFirstAimTime.clear();
+		tTriggerBot.m_dSuspiciousShots.clear();
 		return;
 	}
 
@@ -185,6 +189,7 @@ void CCheaterDetection::TrackTriggerBot(CTFPlayer* pEntity)
 	if (!bAiming)
 	{
 		tTriggerBot.m_mFirstAimTime.clear();
+		tTriggerBot.m_dSuspiciousShots.clear();
 		return;
 	}
 
@@ -367,7 +372,7 @@ void CCheaterDetection::ReportChoke(CTFPlayer* pEntity, int iChoke)
 	if (Vars::CheaterDetection::Methods.Value & Vars::CheaterDetection::MethodsEnum::PacketChoking)
 	{
 		mData[pEntity].m_PacketChoking.m_vChokes.push_back(iChoke);
-		if (mData[pEntity].m_PacketChoking.m_vChokes.size() == 3)
+		if (mData[pEntity].m_PacketChoking.m_vChokes.size() >= 3)
 		{
 			mData[pEntity].m_PacketChoking.m_bInfract = true; // check for last 3 choke amounts
 			for (auto& iChoke : mData[pEntity].m_PacketChoking.m_vChokes)
@@ -410,7 +415,7 @@ void CCheaterDetection::ReportDamage(IGameEvent* pEvent)
 	{
 		auto& vAngles = mData[pEntity].m_AimFlicking.m_vAngles;
 		if (!vAngles.empty())
-			vAngles.back().m_bAttacking = true;
+			vAngles.front().m_bAttacking = true;
 	}
 
 	if (bCritTracking)
@@ -429,7 +434,15 @@ void CCheaterDetection::ReportDamage(IGameEvent* pEvent)
 				const float flThreshold = Vars::CheaterDetection::TriggerBotMaxReactionTime.Value / 1000.f;
 				const float flReactionTime = I::GlobalVars->curtime - it->second;
 				if (flReactionTime >= 0.f && flReactionTime < flThreshold)
-					tTriggerBot.m_bInfract = true;
+				{
+					const float flWindow = Vars::CheaterDetection::TriggerBotWindow.Value;
+					while (!tTriggerBot.m_dSuspiciousShots.empty() &&
+						I::GlobalVars->curtime - tTriggerBot.m_dSuspiciousShots.front() > flWindow)
+						tTriggerBot.m_dSuspiciousShots.pop_front();
+					tTriggerBot.m_dSuspiciousShots.push_back(I::GlobalVars->curtime);
+					if ((int)tTriggerBot.m_dSuspiciousShots.size() >= Vars::CheaterDetection::TriggerBotMinShots.Value)
+						tTriggerBot.m_bInfract = true;
+				}
 				tTriggerBot.m_mFirstAimTime.erase(it);
 			}
 		}

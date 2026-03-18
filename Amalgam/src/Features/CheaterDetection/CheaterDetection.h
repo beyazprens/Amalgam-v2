@@ -53,6 +53,7 @@ struct PlayerInfo
 	struct TriggerBot_t
 	{
 		std::unordered_map<int, float> m_mFirstAimTime = {}; // entity index -> curtime when attacker first aimed at their head
+		std::deque<float> m_dSuspiciousShots = {}; // timestamps of suspicious shots within the tracking window
 		bool m_bInfract = false;
 	} m_TriggerBot;
 };

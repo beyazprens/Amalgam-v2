@@ -579,6 +579,8 @@ NAMESPACE_BEGIN(Vars)
 		CVar(CritThreshold, "Crit rate threshold", 85.f, SLIDER_PRECISION, 50.f, 100.f, 5.f);
 		CVar(TriggerBotMaxReactionTime, "Triggerbot max reaction time", 100, SLIDER_MIN, 10, 500); // ms
 		CVar(TriggerBotMaxFOV, "Triggerbot max FOV", 5.f, SLIDER_PRECISION, 1.f, 30.f);
+		CVar(TriggerBotMinShots, "Triggerbot min suspicious shots", 2, SLIDER_MIN, 1, 10);
+		CVar(TriggerBotWindow, "Triggerbot shot window", 10.f, SLIDER_PRECISION, 1.f, 30.f);
 	NAMESPACE_END(CheaterDetection)
 
 	NAMESPACE_BEGIN(ESP)
