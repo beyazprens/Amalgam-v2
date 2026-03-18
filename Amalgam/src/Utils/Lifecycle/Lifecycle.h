@@ -35,7 +35,7 @@ struct HasUnload
 // HasGameEvent - implemented by components that handle IGameEvent callbacks.
 // Forward-declare IGameEvent to keep this header dependency-free; callers
 // must include the full interface header themselves.
-struct IGameEvent;
+class IGameEvent;
 struct HasGameEvent
 {
 	virtual void FireGameEvent(IGameEvent* pEvent) = 0;
