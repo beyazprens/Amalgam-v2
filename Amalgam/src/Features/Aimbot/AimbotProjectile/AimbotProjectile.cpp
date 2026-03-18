@@ -986,9 +986,44 @@ static inline void SolveProjectileSpeed(CTFWeaponBase* pWeapon, const Vec3& vLoc
 		}
 	}
 
-	float flOverride = Vars::Aimbot::Projectile::TimeOverride.Value;
-	flDragTime = powf(flTime, 2) * flDrag / (flOverride ? flOverride : 2.0f); // first-order correction: drag * t^2 / 2
-	flVelocity = flVelocity * expf(-flDrag * flTime); // exponential decay avoids negative velocity at high drag*time
+	if (flDrag > 0.f)
+	{
+		const float drag_factor = flDrag * flTime;
+		if (drag_factor >= 0.999f)
+			return; // projectile cannot reach target under this drag
+
+		// Reduce velocity for improved pitch estimation in the caller
+		flVelocity *= expf(-flDrag * flTime);
+
+		float flOverride = Vars::Aimbot::Projectile::TimeOverride.Value;
+		if (flOverride)
+		{
+			flDragTime = powf(flTime, 2) * flDrag / flOverride;
+		}
+		else
+		{
+			// Exact flight time with exponential drag: t_exact = -ln(1 - drag*t0) / drag
+			const float t_exact = -logf(1.f - drag_factor) / flDrag;
+
+			// Estimate the base time CalculateAngle will compute using the reduced velocity
+			float t_reduced_base;
+			const float flVSq = flVelocity * flVelocity; // reduced velocity squared
+			const float flDiscriminant = flVSq * flVSq - flGrav * (flGrav * flDist * flDist + 2.f * vDelta.z * flVSq);
+			if (flDiscriminant >= 0.f)
+			{
+				const float flPitch2 = atanf((flVSq - sqrtf(flDiscriminant)) / (flGrav * flDist));
+				t_reduced_base = flDist / (cosf(flPitch2) * flVelocity);
+			}
+			else
+				// Fallback: reduced velocity is too low to reach the target under gravity.
+				// Approximate the base as t0 * exp(drag*t0), which equals the limit of
+				// (flDist / (cos(pitch_original) * v_reduced)) as pitch approaches the original.
+				t_reduced_base = flTime * expf(drag_factor);
+
+			// Set correction so that: (t_reduced_base + flDragTime) = t_exact
+			flDragTime = t_exact - t_reduced_base;
+		}
+	}
 }
 void CAimbotProjectile::CalculateAngle(const Vec3& vLocalPos, const Vec3& vTargetPos, int iSimTime, Solution_t& tOut, bool bAccuracy, int iTolerance)
 {
@@ -1683,6 +1718,7 @@ bool CAimbotProjectile::Aim(const Vec3& vCurAngle, const Vec3& vToAngle, Vec3& v
 		// Dynamically scale smooth strength based on projectile time-of-flight:
 		// short ToF (fast/close projectile) -> more aggressive (higher strength)
 		// long ToF (slow/far projectile)    -> smoother movement (lower strength)
+		// Pivot at 0.5s (1x strength); clamped to [0.25x, 2.0x] to avoid extremes.
 		if (m_flTimeTo < std::numeric_limits<float>::max() && m_flTimeTo > 0.f)
 		{
 			const float flToFScale = std::clamp(0.5f / m_flTimeTo, 0.25f, 2.0f);
