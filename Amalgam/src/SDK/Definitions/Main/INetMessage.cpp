@@ -33,7 +33,9 @@ bool CLC_Move::ReadFromBuffer(bf_read& buffer)
 
 const char* NET_SetConVar::ToString() const
 {
-    return std::format("{}: {} cvars, \"{}\"=\"{}\"", GetName(), m_ConVars.Count(), m_ConVars[0].Name, m_ConVars[0].Value).c_str();
+    thread_local std::string s;
+    s = std::format("{}: {} cvars, \"{}\"=\"{}\"", GetName(), m_ConVars.Count(), m_ConVars[0].Name, m_ConVars[0].Value);
+    return s.c_str();
 }
 
 bool NET_SetConVar::WriteToBuffer(bf_write& buffer)
@@ -90,7 +92,9 @@ bool NET_SignonState::ReadFromBuffer(bf_read& buffer)
 
 const char* NET_SignonState::ToString(void) const
 {
-    return std::format("net_SignonState: state {}, count {}", m_nSignonState, m_nSpawnCount).c_str();
+    thread_local std::string s;
+    s = std::format("net_SignonState: state {}, count {}", m_nSignonState, m_nSpawnCount);
+    return s.c_str();
 }
 
 #define NET_TICK_SCALEUP	100000.0f
@@ -115,12 +119,16 @@ bool NET_Tick::ReadFromBuffer(bf_read& buffer)
 
 const char* NET_Tick::ToString(void) const
 {
-    return std::format("{}: tick {}", GetName(), m_nTick).c_str();
+    thread_local std::string s;
+    s = std::format("{}: tick {}", GetName(), m_nTick);
+    return s.c_str();
 }
 
 const char* CLC_VoiceData::ToString(void) const
 {
-    return std::format("{}: {} bytes", GetName(), static_cast<int>(m_nLength * 0.125f)).c_str();
+    thread_local std::string s;
+    s = std::format("{}: {} bytes", GetName(), static_cast<int>(m_nLength * 0.125f));
+    return s.c_str();
 }
 
 
@@ -159,5 +167,7 @@ bool CLC_BaselineAck::ReadFromBuffer(bf_read& buffer)
 
 const char* CLC_BaselineAck::ToString(void) const
 {
-    return std::format("{}: tick {}", GetName(), m_nBaselineTick).c_str();
+    thread_local std::string s;
+    s = std::format("{}: tick {}", GetName(), m_nBaselineTick);
+    return s.c_str();
 }

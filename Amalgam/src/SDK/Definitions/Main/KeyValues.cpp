@@ -236,7 +236,7 @@ const wchar_t* KeyValues::GetWString(const char* keyName, const wchar_t* default
 		case TYPE_STRING:
 		{
 			const auto bufSize = strlen(dat->m_sValue) + 1;
-			wchar_t* pWBuf = new wchar_t[bufSize];
+			wchar_t* pWBuf = static_cast<wchar_t*>(I::MemAlloc->Alloc(bufSize * sizeof(wchar_t)));
 			const int result = UTF8ToUnicode(dat->m_sValue, pWBuf, static_cast<int>(bufSize) * sizeof(wchar_t));
 			if (result >= 0)
 			{
@@ -244,10 +244,10 @@ const wchar_t* KeyValues::GetWString(const char* keyName, const wchar_t* default
 			}
 			else
 			{
-				delete[] pWBuf;
+				I::MemAlloc->Free(pWBuf);
 				return defaultValue;
 			}
-			delete[] pWBuf;
+			I::MemAlloc->Free(pWBuf);
 			break;
 		}
 		default:
@@ -350,8 +350,8 @@ void KeyValues::SetWString(const char* keyName, const wchar_t* value)
 	KeyValues* dat = FindKey(keyName, true);
 	if (dat)
 	{
-		delete[] dat->m_wsValue;
-		delete[] dat->m_sValue;
+		if (dat->m_wsValue) I::MemAlloc->Free(dat->m_wsValue);
+		if (dat->m_sValue) I::MemAlloc->Free(dat->m_sValue);
 		dat->m_sValue = NULL;
 
 		if (!value)
@@ -360,7 +360,7 @@ void KeyValues::SetWString(const char* keyName, const wchar_t* value)
 		}
 
 		int len = int(wcslen(value));
-		dat->m_wsValue = new wchar_t[len + 1];
+		dat->m_wsValue = static_cast<wchar_t*>(I::MemAlloc->Alloc((len + 1) * sizeof(wchar_t)));
 		memcpy(dat->m_wsValue, value, (len + 1) * sizeof(wchar_t));
 
 		dat->m_iDataType = TYPE_WSTRING;
@@ -378,8 +378,8 @@ void KeyValues::SetString(const char* keyName, const char* value)
 			return;
 		}
 
-		delete[] dat->m_sValue;
-		delete[] dat->m_wsValue;
+		if (dat->m_sValue) I::MemAlloc->Free(dat->m_sValue);
+		if (dat->m_wsValue) I::MemAlloc->Free(dat->m_wsValue);
 		dat->m_wsValue = NULL;
 
 		if (!value)
@@ -388,7 +388,7 @@ void KeyValues::SetString(const char* keyName, const char* value)
 		}
 
 		int len = int(strlen(value));
-		dat->m_sValue = new char[len + 1];
+		dat->m_sValue = static_cast<char*>(I::MemAlloc->Alloc(len + 1));
 		memcpy(dat->m_sValue, value, len + 1);
 
 		dat->m_iDataType = TYPE_STRING;
@@ -412,11 +412,11 @@ void KeyValues::SetUint64(const char* keyName, uint64_t value)
 
 	if (dat)
 	{
-		delete[] dat->m_sValue;
-		delete[] dat->m_wsValue;
+		if (dat->m_sValue) I::MemAlloc->Free(dat->m_sValue);
+		if (dat->m_wsValue) I::MemAlloc->Free(dat->m_wsValue);
 		dat->m_wsValue = NULL;
 
-		dat->m_sValue = new char[sizeof(uint64_t)];
+		dat->m_sValue = static_cast<char*>(I::MemAlloc->Alloc(sizeof(uint64_t)));
 		*((uint64_t*)dat->m_sValue) = value;
 		dat->m_iDataType = TYPE_UINT64;
 	}

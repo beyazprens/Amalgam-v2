@@ -191,7 +191,10 @@ void CMaterials::LoadMaterials()
 	{
 		KeyValues* kv = new KeyValues(tMaterial.m_sName.c_str());
 		if (!kv->LoadFromBuffer(tMaterial.m_sName.c_str(), tMaterial.m_sVMT.c_str()))
+		{
+			kv->DeleteThis();
 			continue;
+		}
 
 		ModifyKeyValues(kv);
 		tMaterial.m_pMaterial = Create(tMaterial.m_sName.c_str(), kv);
@@ -321,7 +324,10 @@ void CMaterials::AddMaterial(const char* sName)
 
 	KeyValues* kv = new KeyValues(sName);
 	if (!kv->LoadFromBuffer(sName, tMaterial.m_sVMT.c_str()))
+	{
+		kv->DeleteThis();
 		return;
+	}
 
 	ModifyKeyValues(kv);
 	tMaterial.m_pMaterial = Create(sName, kv);
@@ -350,7 +356,11 @@ void CMaterials::EditMaterial(const char* sName, const char* sVMT)
 
 		KeyValues* kv = new KeyValues(sName);
 		if (!kv->LoadFromBuffer(sName, sVMT))
+		{
+			kv->DeleteThis();
+			m_bLoaded = true;
 			return;
+		}
 
 		ModifyKeyValues(kv);
 		tMaterial.m_pMaterial = Create(sName, kv);
