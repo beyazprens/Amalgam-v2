@@ -296,7 +296,7 @@ bool CAutoDetonate::FlareCheck(CTFPlayer* pLocal)
 		if (!pWeapon)
 			continue;
 
-		float flRadius = TF_FLARE_DET_RADIUS;
+		float flRadius = Vars::Aimbot::Projectile::AutodetRadius.Value * 110.f / 100;
 		flRadius = SDK::AttribHookValue(flRadius, "mult_explosion_radius", pWeapon) - 1;
 
 		Vec3 vOrigin = SDK::PredictOrigin(pProjectile->m_vecOrigin(), pProjectile->GetAbsVelocity(), flLatency);
@@ -364,7 +364,7 @@ bool CAutoDetonate::StickyCheck(CTFPlayer* pLocal, CUserCmd* pCmd)
 			continue;
 
 		vStickies.push_back(pPipebomb);
-		vRadiuses[pPipebomb->entindex()] = pPipebomb->GetDamageRadius() - 1;
+		vRadiuses[pPipebomb->entindex()] = (pPipebomb->GetDamageRadius() * Vars::Aimbot::Projectile::AutodetRadius.Value / 100) - 1;
 		vPredictedStickyOrigins[pPipebomb->entindex()] = SDK::PredictOrigin(pPipebomb->m_vecOrigin(), pPipebomb->GetAbsVelocity(), flLatency);
 	}
 
