@@ -7,7 +7,9 @@ class CRender
 {
 public:
 	void Render(IDirect3DDevice9* pDevice);
-	void Initialize(IDirect3DDevice9* pDevice);
+	// hWnd is the window that receives Win32 input events (may differ from the
+	// D3D9 back-buffer window when using an external overlay).
+	void Initialize(HWND hWnd, IDirect3DDevice9* pDevice);
 
 	void LoadColors();
 	void LoadFonts();

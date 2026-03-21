@@ -1,7 +1,6 @@
 #ifndef TEXTMODE
 #include "Render.h"
 
-#include "../../Hooks/Direct3DDevice9.h"
 #include "../../Features/Configs/Configs.h"
 #include <ImGui/imgui_impl_win32.h>
 #include "Fonts/MaterialDesign/MaterialIcons.h"
@@ -16,12 +15,6 @@ void CRender::Render(IDirect3DDevice9* pDevice)
 	using namespace ImGui;
 
 	m_pDevice = pDevice;
-
-	static std::once_flag initFlag;
-	std::call_once(initFlag, [&]
-		{
-			Initialize(pDevice);
-		});
 
 	LoadColors();
 	{
@@ -155,11 +148,12 @@ void CRender::LoadStyle()
 	style.GrabRounding = H::Draw.Scale(3);
 }
 
-void CRender::Initialize(IDirect3DDevice9* pDevice)
+void CRender::Initialize(HWND hWnd, IDirect3DDevice9* pDevice)
 {
-	// Initialize ImGui and device
+	// hWnd  = game window  – used by the Win32 backend for mouse/focus tracking
+	// pDevice = overlay D3D9 device – rendering goes to the streamproof window
 	ImGui::CreateContext();
-	ImGui_ImplWin32_Init(WndProc::hwWindow);
+	ImGui_ImplWin32_Init(hWnd);
 	ImGui_ImplDX9_Init(pDevice);
 
 	auto& io = ImGui::GetIO();

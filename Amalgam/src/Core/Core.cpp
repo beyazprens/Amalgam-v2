@@ -4,6 +4,9 @@
 #include "../BytePatches/BytePatches.h"
 #include "../Features/Configs/Configs.h"
 #include "../Features/ImGui/Menu/Menu.h"
+#ifndef TEXTMODE
+#include "../Features/ImGui/ExternalOverlay.h"
+#endif
 #include "../Features/EnginePrediction/EnginePrediction.h"
 #include "../Features/Visuals/Materials/Materials.h"
 #include "../Features/Visuals/Visuals.h"
@@ -215,6 +218,9 @@ void CCore::Unload()
 	F::EnginePrediction.Unload();
 	H::ConVars.Restore();
 	F::Materials.UnloadMaterials();
+#ifndef TEXTMODE
+	F::ExternalOverlay.Unload();
+#endif
 
 	if (m_bFailed2)
 	{

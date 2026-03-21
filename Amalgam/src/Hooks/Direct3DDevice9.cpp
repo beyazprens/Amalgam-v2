@@ -3,7 +3,9 @@
 
 #include "../SDK/SDK.h"
 #include "../Features/ImGui/Render.h"
+#include "../Features/ImGui/ExternalOverlay.h"
 #include "../Features/ImGui/Menu/Menu.h"
+#include <mutex>
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -13,7 +15,18 @@ MAKE_HOOK(Direct3DDevice9_Present, U::Memory.GetVirtual(I::DirectXDevice, 17), H
 	DEBUG_RETURN(Direct3DDevice9_Present, pDevice, pSource, pDestination, pDirtyRegion);
 
 	if (!G::Unload)
-		F::Render.Render(pDevice);
+	{
+		// One-time initialisation: create the external overlay window and its
+		// own D3D9 device so ImGui is rendered there instead of on the game
+		// surface (makes the overlay invisible to screen-capture tools).
+		static std::once_flag initFlag;
+		std::call_once(initFlag, [&]
+			{
+				F::ExternalOverlay.Initialize(WndProc::hwWindow, pDevice);
+			});
+
+		F::ExternalOverlay.Render(WndProc::hwWindow);
+	}
 
 	return CALL_ORIGINAL(pDevice, pSource, pDestination, pDirtyRegion);
 }
@@ -23,10 +36,12 @@ MAKE_HOOK(Direct3DDevice9_Reset, U::Memory.GetVirtual(I::DirectXDevice, 16), HRE
 {
 	DEBUG_RETURN(Direct3DDevice9_Reset, pDevice, pPresentationParameters);
 
-	ImGui_ImplDX9_InvalidateDeviceObjects();
-	const HRESULT Original = CALL_ORIGINAL(pDevice, pPresentationParameters);
-	ImGui_ImplDX9_CreateDeviceObjects();
-	return Original;
+	// The game device is being reset; notify the external overlay so it can
+	// reposition its window.  The overlay's own D3D9 device is separate and
+	// will be reset lazily in CExternalOverlay::Render() if the size changes.
+	F::ExternalOverlay.OnGameReset(WndProc::hwWindow);
+
+	return CALL_ORIGINAL(pDevice, pPresentationParameters);
 }
 
 LONG __stdcall WndProc::Func(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
