@@ -161,7 +161,7 @@ void CExternalOverlay::Initialize(HWND hGameWindow, IDirect3DDevice9* pGameDevic
 
 	if (!CreateDevice(pD3D, m_nWidth, m_nHeight))
 	{
-		pD3D->Release(); // CreateDevice did not take ownership
+			pD3D->Release(); // Release our temporary reference; CreateDevice owns its own reference via AddRef
 		::DestroyWindow(m_hWindow);
 		m_hWindow = nullptr;
 		return;
