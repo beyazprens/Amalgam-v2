@@ -24,7 +24,20 @@ static PRUNTIME_FUNCTION s_pFunctionTable = nullptr;
 static void RegisterExceptionTable(HINSTANCE hinstDLL)
 {
 	auto pBase = reinterpret_cast<BYTE*>(hinstDLL);
-	auto pNt   = PIMAGE_NT_HEADERS(pBase + PIMAGE_DOS_HEADER(pBase)->e_lfanew);
+	if (!pBase)
+		return;
+
+	// Some manual-map injectors erase the DOS/NT headers after mapping for
+	// stealth.  Guard every header access so a missing header is a silent
+	// no-op rather than an access-violation crash.
+	auto pDos = PIMAGE_DOS_HEADER(pBase);
+	if (pDos->e_magic != IMAGE_DOS_SIGNATURE)
+		return;
+
+	auto pNt = PIMAGE_NT_HEADERS(pBase + pDos->e_lfanew);
+	if (pNt->Signature != IMAGE_NT_SIGNATURE)
+		return;
+
 	auto& exDir = pNt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXCEPTION];
 
 	if (exDir.VirtualAddress && exDir.Size)

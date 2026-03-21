@@ -30,7 +30,7 @@ public:
 
 private:
 	bool CreateOverlayWindow(HWND hGameWindow);
-	bool CreateDevice(IDirect3D9* pD3D, int nWidth, int nHeight);
+	bool CreateDevice(IDirect3D9* pD3D, HWND hFocusWindow, int nWidth, int nHeight);
 	void DestroyDevice();
 	void ResetDevice(int nWidth, int nHeight);
 

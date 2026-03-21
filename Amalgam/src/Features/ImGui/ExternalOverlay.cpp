@@ -72,7 +72,7 @@ bool CExternalOverlay::CreateOverlayWindow(HWND hGameWindow)
 
 // ─── D3D9 device ────────────────────────────────────────────────────────────
 
-bool CExternalOverlay::CreateDevice(IDirect3D9* pD3D, int nWidth, int nHeight)
+bool CExternalOverlay::CreateDevice(IDirect3D9* pD3D, HWND hFocusWindow, int nWidth, int nHeight)
 {
 	// Re-use the IDirect3D9 object the game device was created from so we
 	// never need to call Direct3DCreate9 (avoids linking against d3d9.lib).
@@ -83,20 +83,36 @@ bool CExternalOverlay::CreateDevice(IDirect3D9* pD3D, int nWidth, int nHeight)
 	pp.Windowed               = TRUE;
 	pp.SwapEffect             = D3DSWAPEFFECT_DISCARD;
 	pp.BackBufferFormat       = D3DFMT_A8R8G8B8; // ARGB for true alpha transparency
-	pp.BackBufferWidth        = static_cast<UINT>(nWidth);
-	pp.BackBufferHeight       = static_cast<UINT>(nHeight);
+	pp.BackBufferWidth        = static_cast<UINT>(nWidth  > 0 ? nWidth  : 1);
+	pp.BackBufferHeight       = static_cast<UINT>(nHeight > 0 ? nHeight : 1);
 	pp.EnableAutoDepthStencil = FALSE;
 	pp.PresentationInterval   = D3DPRESENT_INTERVAL_IMMEDIATE;
 	pp.hDeviceWindow          = m_hWindow;
 
-	HRESULT hr = m_pD3D->CreateDevice(
-		D3DADAPTER_DEFAULT,
-		D3DDEVTYPE_HAL,
-		m_hWindow,
-		D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_FPU_PRESERVE,
-		&pp,
-		&m_pDevice
-	);
+	// Use the game window as the D3D9 focus window.  The overlay window has
+	// WS_EX_NOACTIVATE | WS_EX_TRANSPARENT which makes it unsuitable as a
+	// focus window on some drivers.
+	//
+	// D3DCREATE_NOWINDOWCHANGES: prevents D3D9 from changing the window's
+	//   style or monitor assignment — important when CreateDevice is called
+	//   from inside a Present hook.
+	//
+	// Try hardware VP first (performance); fall back to software VP so the
+	// device creation succeeds even on adapters that refuse a second
+	// hardware-VP device.
+	static const DWORD s_aBehaviors[] = {
+		D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_FPU_PRESERVE | D3DCREATE_NOWINDOWCHANGES,
+		D3DCREATE_SOFTWARE_VERTEXPROCESSING | D3DCREATE_FPU_PRESERVE | D3DCREATE_NOWINDOWCHANGES,
+	};
+
+	HRESULT hr = E_FAIL;
+	for (DWORD dwBehavior : s_aBehaviors)
+	{
+		hr = m_pD3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL,
+		                          hFocusWindow, dwBehavior, &pp, &m_pDevice);
+		if (SUCCEEDED(hr))
+			break;
+	}
 
 	if (FAILED(hr))
 	{
@@ -159,9 +175,9 @@ void CExternalOverlay::Initialize(HWND hGameWindow, IDirect3DDevice9* pGameDevic
 		return;
 	}
 
-	if (!CreateDevice(pD3D, m_nWidth, m_nHeight))
+	if (!CreateDevice(pD3D, hGameWindow, m_nWidth, m_nHeight))
 	{
-			pD3D->Release(); // Release our temporary reference; CreateDevice owns its own reference via AddRef
+		pD3D->Release(); // Release our temporary reference; CreateDevice owns its own reference via AddRef
 		::DestroyWindow(m_hWindow);
 		m_hWindow = nullptr;
 		return;
@@ -202,7 +218,7 @@ void CExternalOverlay::Render(HWND hGameWindow)
 		m_nWidth  = nNewWidth;
 		m_nHeight = nNewHeight;
 		ResetDevice(m_nWidth, m_nHeight);
-		// Fall through – still present a valid cleared frame this tick
+		// Fall through -- still present a valid cleared frame this tick
 	}
 
 	// Clear to fully transparent so only ImGui widgets are visible
