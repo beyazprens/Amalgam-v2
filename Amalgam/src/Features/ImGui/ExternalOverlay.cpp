@@ -72,11 +72,12 @@ bool CExternalOverlay::CreateOverlayWindow(HWND hGameWindow)
 
 // ─── D3D9 device ────────────────────────────────────────────────────────────
 
-bool CExternalOverlay::CreateDevice(int nWidth, int nHeight)
+bool CExternalOverlay::CreateDevice(IDirect3D9* pD3D, int nWidth, int nHeight)
 {
-	m_pD3D = Direct3DCreate9(D3D_SDK_VERSION);
-	if (!m_pD3D)
-		return false;
+	// Re-use the IDirect3D9 object the game device was created from so we
+	// never need to call Direct3DCreate9 (avoids linking against d3d9.lib).
+	m_pD3D = pD3D;
+	m_pD3D->AddRef(); // we own a reference; released in DestroyDevice()
 
 	D3DPRESENT_PARAMETERS pp  = {};
 	pp.Windowed               = TRUE;
@@ -141,7 +142,7 @@ void CExternalOverlay::ResetDevice(int nWidth, int nHeight)
 
 // ─── Public API ─────────────────────────────────────────────────────────────
 
-void CExternalOverlay::Initialize(HWND hGameWindow, IDirect3DDevice9* /*pGameDevice*/)
+void CExternalOverlay::Initialize(HWND hGameWindow, IDirect3DDevice9* pGameDevice)
 {
 	if (m_bReady)
 		return;
@@ -149,12 +150,25 @@ void CExternalOverlay::Initialize(HWND hGameWindow, IDirect3DDevice9* /*pGameDev
 	if (!CreateOverlayWindow(hGameWindow))
 		return;
 
-	if (!CreateDevice(m_nWidth, m_nHeight))
+	// Derive IDirect3D9* from the existing game device – no Direct3DCreate9 call.
+	IDirect3D9* pD3D = nullptr;
+	if (FAILED(pGameDevice->GetDirect3D(&pD3D)) || !pD3D)
 	{
 		::DestroyWindow(m_hWindow);
 		m_hWindow = nullptr;
 		return;
 	}
+
+	if (!CreateDevice(pD3D, m_nWidth, m_nHeight))
+	{
+		pD3D->Release(); // CreateDevice did not take ownership
+		::DestroyWindow(m_hWindow);
+		m_hWindow = nullptr;
+		return;
+	}
+
+	// pD3D reference is now owned by m_pD3D (AddRef'd inside CreateDevice).
+	pD3D->Release();
 
 	// ImGui Win32 backend: use the *game* window so that GetForegroundWindow()
 	// focus checks and ScreenToClient coordinate transforms are relative to the
