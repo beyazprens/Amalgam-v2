@@ -23,9 +23,13 @@ MAKE_HOOK(Direct3DDevice9_Reset, U::Memory.GetVirtual(I::DirectXDevice, 16), HRE
 {
 	DEBUG_RETURN(Direct3DDevice9_Reset, pDevice, pPresentationParameters);
 
-	ImGui_ImplDX9_InvalidateDeviceObjects();
+	// When the overlay is active, ImGui resources live on the overlay device, not the game
+	// device, so only manage them here in the fallback (no-overlay) path.
+	if (!F::Render.m_bOverlayInit)
+		ImGui_ImplDX9_InvalidateDeviceObjects();
 	const HRESULT Original = CALL_ORIGINAL(pDevice, pPresentationParameters);
-	ImGui_ImplDX9_CreateDeviceObjects();
+	if (!F::Render.m_bOverlayInit)
+		ImGui_ImplDX9_CreateDeviceObjects();
 	return Original;
 }
 

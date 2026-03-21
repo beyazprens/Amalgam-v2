@@ -37,8 +37,18 @@ public:
 
 	IDirect3DDevice9* GetDevice() const { return m_pDevice; }
 
+	// Streamproof overlay
+	bool m_bOverlayInit = false;
+	HWND m_hOverlayWindow = nullptr;
+	IDirect3D9Ex* m_pD3DEx = nullptr;
+	IDirect3DDevice9Ex* m_pOverlayDevice = nullptr;
+
 private:
 	IDirect3DDevice9* m_pDevice = nullptr;
+
+	void InitOverlay(IDirect3DDevice9* pGameDevice);
+	void UpdateOverlay();
+	void ResetOverlayDevice(int width, int height);
 };
 
 ADD_FEATURE(CRender, Render);
