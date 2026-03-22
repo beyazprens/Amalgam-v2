@@ -310,6 +310,7 @@ NAMESPACE_BEGIN(Vars)
 			CVar(NoSpread, "No spread", false);
 			CVar(PrioritizeNavbot, "Prioritize navbot target", false);
 			CVar(PrioritizeFollowbot, "Prioritize followbot target", false);
+			CVar(LowHealthFOVPriority, "Low health priority FOV", false);
 
 			CVarEnum(AimHoldsFire, "Aim holds fire", 2, NOSAVE | DEBUGVAR, nullptr,
 				VA_LIST("False", "Minigun only", "Always"),
@@ -476,6 +477,7 @@ NAMESPACE_BEGIN(Vars)
 		CVar(ForceCrits, "Force crits", false);
 		CVar(AvoidRandomCrits, "Avoid random crits", false);
 		CVar(AlwaysMeleeCrit, "Always melee crit", false);
+		CVar(SmartCrit, "Smart crit", false);
 	NAMESPACE_END(CritHack)
 
 	NAMESPACE_BEGIN(Backtrack)

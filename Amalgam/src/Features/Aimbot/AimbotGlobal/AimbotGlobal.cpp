@@ -70,7 +70,7 @@ void CAimbotGlobal::SortTargetsPost(std::vector<Target_t>& vTargets, int iMethod
 }
 
 // this won't prevent shooting bones outside of fov
-bool CAimbotGlobal::PlayerBoneInFOV(CTFPlayer* pTarget, Vec3 vLocalPos, Vec3 vLocalAngles, float& flFOVTo, Vec3& vPos, Vec3& vAngleTo, int iHitboxes)
+bool CAimbotGlobal::PlayerBoneInFOV(CTFPlayer* pTarget, Vec3 vLocalPos, Vec3 vLocalAngles, float& flFOVTo, Vec3& vPos, Vec3& vAngleTo, int iHitboxes, float flFOVOverride)
 {
 	std::vector<HitboxInfo_t>* vHitboxInfos = F::Backtrack.GetHitboxInfos(pTarget);
 	if (!Vars::Visuals::Removals::Interpolation.Value)
@@ -109,7 +109,7 @@ bool CAimbotGlobal::PlayerBoneInFOV(CTFPlayer* pTarget, Vec3 vLocalPos, Vec3 vLo
 		}
 	}
 
-	return flMinFOV < Vars::Aimbot::General::AimFOV.Value;
+	return flMinFOV < (flFOVOverride > 0.f ? flFOVOverride : Vars::Aimbot::General::AimFOV.Value);
 }
 
 bool CAimbotGlobal::IsHitboxValid(CBaseEntity* pEntity, int nHitbox, int iHitboxes)

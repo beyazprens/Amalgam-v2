@@ -309,6 +309,18 @@ int CCritHack::GetCritRequest(CUserCmd* pCmd, CTFWeaponBase* pWeapon)
 			bPressed = true;
 	}
 
+	if (!bPressed && Vars::CritHack::SmartCrit.Value && G::AimTarget.m_iEntIndex)
+	{
+		auto pLocal = H::Entities.GetLocal();
+		auto pTarget = I::ClientEntityList->GetClientEntity(G::AimTarget.m_iEntIndex)->As<CTFPlayer>();
+		if (pLocal && pTarget && pTarget->IsPlayer() && pTarget->IsAlive())
+		{
+			float flCritDmg = m_flDamage * TF_DAMAGE_CRIT_MULTIPLIER;
+			if (pLocal->m_iHealth() <= 100 && pTarget->m_iHealth() <= flCritDmg)
+				bPressed = true;
+		}
+	}
+
 	bool bSkip = Vars::CritHack::AvoidRandomCrits.Value;
 	bool bDesync = CommandToSeed(pCmd->command_number) == pWeapon->m_iCurrentSeed();
 
@@ -359,7 +371,9 @@ void CCritHack::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd)
 	if (iRequest == CritRequestEnum::Any)
 		return;
 
-	if (!Vars::Misc::Game::AntiCheatCompatibility.Value)
+	bool bSmartCritActive = Vars::CritHack::SmartCrit.Value && iRequest == CritRequestEnum::Crit;
+
+	if (!Vars::Misc::Game::AntiCheatCompatibility.Value && !bSmartCritActive)
 	{
 		if (int iCommand = GetCritCommand(pWeapon, pCmd->command_number, iRequest == CritRequestEnum::Crit))
 		{
@@ -367,7 +381,7 @@ void CCritHack::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd)
 			pCmd->random_seed = MD5_PseudoRandom(iCommand) & std::numeric_limits<int>::max();
 		}
 	}
-	else if (Vars::Misc::Game::AntiCheatCritHack.Value)
+	else if (Vars::Misc::Game::AntiCheatCritHack.Value || bSmartCritActive)
 	{
 		if (!IsCritCommand(pCmd->command_number, pWeapon, iRequest == CritRequestEnum::Crit, false))
 		{

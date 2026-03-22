@@ -50,8 +50,17 @@ static inline std::vector<Target_t> GetTargets(CTFPlayer* pLocal, CTFWeaponBase*
 			}
 
 			float flFOVTo; Vec3 vPos, vAngleTo;
-			if (!F::AimbotGlobal.PlayerBoneInFOV(pEntity->As<CTFPlayer>(), vLocalPos, vLocalAngles, flFOVTo, vPos, vAngleTo, Vars::Aimbot::Hitscan::Hitboxes.Value))
-				continue;
+			bool bInFOV = F::AimbotGlobal.PlayerBoneInFOV(pEntity->As<CTFPlayer>(), vLocalPos, vLocalAngles, flFOVTo, vPos, vAngleTo, Vars::Aimbot::Hitscan::Hitboxes.Value);
+			if (!bInFOV)
+			{
+				if (!Vars::Aimbot::General::LowHealthFOVPriority.Value || bTeam)
+					continue;
+				if (!F::AimbotGlobal.PlayerBoneInFOV(pEntity->As<CTFPlayer>(), vLocalPos, vLocalAngles, flFOVTo, vPos, vAngleTo, Vars::Aimbot::Hitscan::Hitboxes.Value, Vars::Aimbot::General::AimFOV.Value * 1.5f))
+					continue;
+				auto pPlayer = pEntity->As<CTFPlayer>();
+				if (!pPlayer || pPlayer->m_iHealth() > pWeapon->GetDamage())
+					continue;
+			}
 
 			float flDistTo = vLocalPos.DistTo(vPos);
 			int iPriority = F::AimbotGlobal.GetPriority(pEntity->entindex());
@@ -68,6 +77,8 @@ static inline std::vector<Target_t> GetTargets(CTFPlayer* pLocal, CTFWeaponBase*
 					iPriority = std::numeric_limits<int>::max();
 				}
 			}
+			else if (!bInFOV)
+				iPriority = std::numeric_limits<int>::max();
 			vTargets.emplace_back(pEntity, TargetEnum::Player, vPos, vAngleTo, flFOVTo, flDistTo, iPriority);
 		}
 
