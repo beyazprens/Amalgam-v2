@@ -9,16 +9,8 @@
 static bool ShouldPopAtHealth(CTFPlayer* pTarget, float flScale, int iResistType);
 
 void CAutoHeal::AutoHeal(CTFPlayer* pLocal, CWeaponMedigun* pWeapon, CUserCmd* pCmd)
-{	// manage lagcomp
-	if (!Vars::Aimbot::Healing::AutoHeal.Value)
-		return;
-
-	auto pTarget = pWeapon->m_hHealingTarget().Get()->As<CTFPlayer>();
-	if (!pTarget || pCmd->buttons & IN_ATTACK && !(G::LastUserCmd->buttons & IN_ATTACK))
-		return;
-
-	m_iTargetIdx = pTarget->entindex();
-
+{
+	// Auto switch to crossbow - works independently of AutoHeal setting
 	if (G::SavedWepIds[SLOT_PRIMARY] == TF_WEAPON_CROSSBOW && Vars::Aimbot::Healing::AutoArrow.Value && Vars::Aimbot::Healing::AutoSwitch.Value)
 	{
 		if (auto pCrossbow = pLocal->GetWeaponFromSlot(SLOT_PRIMARY))
@@ -30,34 +22,91 @@ void CAutoHeal::AutoHeal(CTFPlayer* pLocal, CWeaponMedigun* pWeapon, CUserCmd* p
 
 			float flDeployTime = 0.5f * flDeployTimeMultiplier;
 			float flNextPrimaryAttack = pCrossbow->m_flNextPrimaryAttack();
-			if (flNextPrimaryAttack - flDeployTime <= I::GlobalVars->curtime && pTarget->m_iHealth() < pTarget->GetMaxHealth() - Vars::Aimbot::Healing::AutoSwitchHealth.Value)
+			if (flNextPrimaryAttack - flDeployTime <= I::GlobalVars->curtime)
 			{
-				float flMinCharge = pWeapon->GetMedigunType() == MEDIGUN_RESIST ? 0.25f : 1.f;
+				CTFPlayer* pSwitchTarget = nullptr;
 
-				// Don't switch to crossbow if uber is active or about to be popped at health threshold.
-				bool bShouldActivate = false;
-				if (Vars::Aimbot::Healing::ActivationHealthPercent.Value && pWeapon->m_flChargeLevel() >= flMinCharge)
+				// First check the current medigun healing target
+				if (auto pMediTarget = pWeapon->m_hHealingTarget().Get()->As<CTFPlayer>())
 				{
-					float flHealthScale = Vars::Aimbot::Healing::ActivationHealthPercent.Value / 100;
-					bShouldActivate = ShouldPopAtHealth(pLocal, flHealthScale, m_iResistType)
-						|| ShouldPopAtHealth(pTarget, flHealthScale, m_iResistType);
+					if (pMediTarget->m_iHealth() < pMediTarget->GetMaxHealth() - Vars::Aimbot::Healing::AutoSwitchHealth.Value)
+						pSwitchTarget = pMediTarget;
 				}
 
-				if (!pLocal->IsInvulnerable() && !bShouldActivate
-					&& (pWeapon->m_flChargeLevel() < flMinCharge || pTarget->IsInvulnerable()
-					|| pTarget->InCond(TF_COND_BULLET_IMMUNE) || pTarget->InCond(TF_COND_MEDIGUN_UBER_BULLET_RESIST)
-					|| pTarget->InCond(TF_COND_BLAST_IMMUNE) || pTarget->InCond(TF_COND_MEDIGUN_UBER_BLAST_RESIST)
-					|| pTarget->InCond(TF_COND_FIRE_IMMUNE) || pTarget->InCond(TF_COND_MEDIGUN_UBER_FIRE_RESIST)))
+				// If no valid medigun target, scan for low-health teammates within the aim FOV
+				// so the silent projectile aimbot can deliver the heal without requiring
+				// the crosshair to be manually placed on them.
+				if (!pSwitchTarget)
 				{
-					I::EngineClient->ClientCmd_Unrestricted("slot1");
+					const Vec3 vLocalPos = pLocal->GetShootPos();
+					const Vec3 vLocalAngles = I::EngineClient->GetViewAngles();
+					float flBestFOV = std::numeric_limits<float>::max();
 
-					m_flAutoSwitchExpireTime = flNextPrimaryAttack > I::GlobalVars->curtime ? flNextPrimaryAttack + 0.1f : I::GlobalVars->curtime + 1.1f;
-					m_iAutoSwitch = 1;
-					return;
+					for (auto pEntity : H::Entities.GetGroup(EntityEnum::PlayerTeam))
+					{
+						auto pTeammate = pEntity->As<CTFPlayer>();
+						if (!pTeammate || pTeammate->entindex() == pLocal->entindex())
+							continue;
+						if (pTeammate->m_iHealth() >= pTeammate->GetMaxHealth() - Vars::Aimbot::Healing::AutoSwitchHealth.Value)
+							continue;
+						if (pTeammate->IsInvulnerable())
+							continue;
+						if (Vars::Aimbot::Healing::HealPriority.Value == Vars::Aimbot::Healing::HealPriorityEnum::FriendsOnly
+							&& !H::Entities.IsFriend(pTeammate->entindex()) && !H::Entities.InParty(pTeammate->entindex()))
+							continue;
+
+						float flFOV; Vec3 vPos, vAngle;
+						if (!F::AimbotGlobal.PlayerBoneInFOV(pTeammate, vLocalPos, vLocalAngles, flFOV, vPos, vAngle))
+							continue;
+
+						if (flFOV < flBestFOV)
+						{
+							flBestFOV = flFOV;
+							pSwitchTarget = pTeammate;
+						}
+					}
+				}
+
+				if (pSwitchTarget)
+				{
+					float flMinCharge = pWeapon->GetMedigunType() == MEDIGUN_RESIST ? 0.25f : 1.f;
+
+					// Don't switch to crossbow if uber is active or about to be popped at health threshold.
+					bool bShouldActivate = false;
+					if (Vars::Aimbot::Healing::ActivationHealthPercent.Value && pWeapon->m_flChargeLevel() >= flMinCharge)
+					{
+						float flHealthScale = Vars::Aimbot::Healing::ActivationHealthPercent.Value / 100;
+						bShouldActivate = ShouldPopAtHealth(pLocal, flHealthScale, m_iResistType)
+							|| ShouldPopAtHealth(pSwitchTarget, flHealthScale, m_iResistType);
+					}
+
+					if (!pLocal->IsInvulnerable() && !bShouldActivate
+						&& (pWeapon->m_flChargeLevel() < flMinCharge || pSwitchTarget->IsInvulnerable()
+						|| pSwitchTarget->InCond(TF_COND_BULLET_IMMUNE) || pSwitchTarget->InCond(TF_COND_MEDIGUN_UBER_BULLET_RESIST)
+						|| pSwitchTarget->InCond(TF_COND_BLAST_IMMUNE) || pSwitchTarget->InCond(TF_COND_MEDIGUN_UBER_BLAST_RESIST)
+						|| pSwitchTarget->InCond(TF_COND_FIRE_IMMUNE) || pSwitchTarget->InCond(TF_COND_MEDIGUN_UBER_FIRE_RESIST)))
+					{
+						I::EngineClient->ClientCmd_Unrestricted("slot1");
+
+						m_flAutoSwitchExpireTime = flNextPrimaryAttack > I::GlobalVars->curtime ? flNextPrimaryAttack + 0.1f : I::GlobalVars->curtime + 1.1f;
+						m_iTargetIdx = pSwitchTarget->entindex();
+						m_iAutoSwitch = 1;
+						return;
+					}
 				}
 			}
 		}
 	}
+
+	// manage lagcomp
+	if (!Vars::Aimbot::Healing::AutoHeal.Value)
+		return;
+
+	auto pTarget = pWeapon->m_hHealingTarget().Get()->As<CTFPlayer>();
+	if (!pTarget || pCmd->buttons & IN_ATTACK && !(G::LastUserCmd->buttons & IN_ATTACK))
+		return;
+
+	m_iTargetIdx = pTarget->entindex();
 
 	std::vector<TickRecord*> vRecords = {};
 	if (!F::Backtrack.GetRecords(pTarget, vRecords))
