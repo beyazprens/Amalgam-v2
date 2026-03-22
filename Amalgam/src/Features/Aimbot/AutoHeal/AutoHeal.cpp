@@ -10,11 +10,8 @@ static bool ShouldPopAtHealth(CTFPlayer* pTarget, float flScale, int iResistType
 
 void CAutoHeal::AutoHeal(CTFPlayer* pLocal, CWeaponMedigun* pWeapon, CUserCmd* pCmd)
 {	// manage lagcomp
-	if (!Vars::Aimbot::Healing::AutoHeal.Value)
-		return;
-
 	auto pTarget = pWeapon->m_hHealingTarget().Get()->As<CTFPlayer>();
-	if (!pTarget || pCmd->buttons & IN_ATTACK && !(G::LastUserCmd->buttons & IN_ATTACK))
+	if (!pTarget)
 		return;
 
 	m_iTargetIdx = pTarget->entindex();
@@ -58,6 +55,9 @@ void CAutoHeal::AutoHeal(CTFPlayer* pLocal, CWeaponMedigun* pWeapon, CUserCmd* p
 			}
 		}
 	}
+
+	if (!Vars::Aimbot::Healing::AutoHeal.Value || (pCmd->buttons & IN_ATTACK && !(G::LastUserCmd->buttons & IN_ATTACK)))
+		return;
 
 	std::vector<TickRecord*> vRecords = {};
 	if (!F::Backtrack.GetRecords(pTarget, vRecords))
