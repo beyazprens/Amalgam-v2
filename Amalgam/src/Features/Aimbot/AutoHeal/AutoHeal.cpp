@@ -11,7 +11,8 @@ static bool ShouldPopAtHealth(CTFPlayer* pTarget, float flScale, int iResistType
 void CAutoHeal::AutoHeal(CTFPlayer* pLocal, CWeaponMedigun* pWeapon, CUserCmd* pCmd)
 {
 	// Auto switch to crossbow - works independently of AutoHeal setting
-	if (G::SavedWepIds[SLOT_PRIMARY] == TF_WEAPON_CROSSBOW && Vars::Aimbot::Healing::AutoArrow.Value && Vars::Aimbot::Healing::AutoSwitch.Value)
+	if (G::SavedWepIds[SLOT_PRIMARY] == TF_WEAPON_CROSSBOW && Vars::Aimbot::Healing::AutoArrow.Value && Vars::Aimbot::Healing::AutoSwitch.Value
+		&& I::GlobalVars->curtime >= m_flAutoSwitchCooldown)
 	{
 		if (auto pCrossbow = pLocal->GetWeaponFromSlot(SLOT_PRIMARY))
 		{
@@ -86,6 +87,14 @@ void CAutoHeal::AutoHeal(CTFPlayer* pLocal, CWeaponMedigun* pWeapon, CUserCmd* p
 						|| pSwitchTarget->InCond(TF_COND_BLAST_IMMUNE) || pSwitchTarget->InCond(TF_COND_MEDIGUN_UBER_BLAST_RESIST)
 						|| pSwitchTarget->InCond(TF_COND_FIRE_IMMUNE) || pSwitchTarget->InCond(TF_COND_MEDIGUN_UBER_FIRE_RESIST)))
 					{
+						// Pre-aim viewangles at the switch target so the crosshair moves visibly
+						const Vec3 vCurAngles = I::EngineClient->GetViewAngles();
+						float flFovToTarget; Vec3 vPosToTarget, vAngleToTarget = vCurAngles;
+						F::AimbotGlobal.PlayerBoneInFOV(pSwitchTarget, pLocal->GetShootPos(), vCurAngles, flFovToTarget, vPosToTarget, vAngleToTarget);
+						SDK::FixMovement(pCmd, vAngleToTarget);
+						pCmd->viewangles = vAngleToTarget;
+						I::EngineClient->SetViewAngles(vAngleToTarget);
+
 						I::EngineClient->ClientCmd_Unrestricted("slot1");
 
 						m_flAutoSwitchExpireTime = flNextPrimaryAttack > I::GlobalVars->curtime ? flNextPrimaryAttack + 0.1f : I::GlobalVars->curtime + 1.1f;
@@ -737,6 +746,7 @@ void CAutoHeal::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd)
 		if (m_iAutoSwitch == 2 || !(Vars::Aimbot::Healing::AutoArrow.Value && Vars::Aimbot::Healing::AutoSwitch.Value) && m_iAutoSwitch != 0)
 		{
 			I::EngineClient->ClientCmd_Unrestricted("slot2");
+			m_flAutoSwitchCooldown = I::GlobalVars->curtime + 2.f;
 			m_iAutoSwitch = 0;
 			return;
 		}
@@ -744,7 +754,8 @@ void CAutoHeal::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd)
 		m_mMedicCallers.clear();
 		m_iResistType = -1;
 		m_flDamagedTime = 0.f;
-		m_iTargetIdx = -1;
+		if (m_iAutoSwitch == 0)
+			m_iTargetIdx = -1;
 		return;
 	}
 
