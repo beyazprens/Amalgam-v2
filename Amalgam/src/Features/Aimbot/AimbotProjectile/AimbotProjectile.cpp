@@ -987,8 +987,8 @@ static inline void SolveProjectileSpeed(CTFWeaponBase* pWeapon, const Vec3& vLoc
 	}
 
 	float flOverride = Vars::Aimbot::Projectile::TimeOverride.Value;
-	flDragTime = powf(flTime, 2) * flDrag / (flOverride ? flOverride : 2.0f); // first-order correction: drag * t^2 / 2
-	flVelocity = flVelocity * expf(-flDrag * flTime); // exponential decay avoids negative velocity at high drag*time
+	flDragTime = powf(flTime, 2) * flDrag / (flOverride ? flOverride : 1.5f); // rough estimate to prevent m_flTime being too low
+	flVelocity = flVelocity - flVelocity * flTime * flDrag;
 }
 void CAimbotProjectile::CalculateAngle(const Vec3& vLocalPos, const Vec3& vTargetPos, int iSimTime, Solution_t& tOut, bool bAccuracy, int iTolerance)
 {
@@ -1678,12 +1678,9 @@ bool CAimbotProjectile::Aim(const Vec3& vCurAngle, const Vec3& vToAngle, Vec3& v
 		break;
 	case Vars::Aimbot::General::AimTypeEnum::Smooth:
 	case Vars::Aimbot::General::AimTypeEnum::SmoothVelocity:
-	{
-		float flSmoothStrength = F::Aimbot.GetSmoothStrength(vCurAngle, vToAngle);
-		vOut = vCurAngle.LerpAngle(vToAngle, flSmoothStrength);
+		vOut = vCurAngle.LerpAngle(vToAngle, F::Aimbot.GetSmoothStrength(vCurAngle, vToAngle));
 		bReturn = true;
 		break;
-	}
 	case Vars::Aimbot::General::AimTypeEnum::Assistive:
 		Vec3 vMouseDelta = G::CurrentUserCmd->viewangles.DeltaAngle(G::LastUserCmd->viewangles);
 		Vec3 vTargetDelta = vToAngle.DeltaAngle(G::LastUserCmd->viewangles);
