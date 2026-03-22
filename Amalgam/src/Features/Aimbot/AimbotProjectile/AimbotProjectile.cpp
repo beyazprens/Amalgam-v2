@@ -1680,14 +1680,6 @@ bool CAimbotProjectile::Aim(const Vec3& vCurAngle, const Vec3& vToAngle, Vec3& v
 	case Vars::Aimbot::General::AimTypeEnum::SmoothVelocity:
 	{
 		float flSmoothStrength = F::Aimbot.GetSmoothStrength(vCurAngle, vToAngle);
-		// Dynamically scale smooth strength based on projectile time-of-flight:
-		// short ToF (fast/close projectile) -> more aggressive (higher strength)
-		// long ToF (slow/far projectile)    -> smoother movement (lower strength)
-		if (m_flTimeTo < std::numeric_limits<float>::max() && m_flTimeTo > 0.f)
-		{
-			const float flToFScale = std::clamp(0.5f / m_flTimeTo, 0.25f, 2.0f);
-			flSmoothStrength = std::clamp(flSmoothStrength * flToFScale, 0.f, 1.f);
-		}
 		vOut = vCurAngle.LerpAngle(vToAngle, flSmoothStrength);
 		bReturn = true;
 		break;

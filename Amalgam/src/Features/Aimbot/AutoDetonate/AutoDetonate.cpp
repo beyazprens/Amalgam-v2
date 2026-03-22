@@ -267,19 +267,21 @@ bool CAutoDetonate::LegitCheck(CTFPlayer* pLocal, CBaseEntity* pTarget) const
 	if (SDK::VisPos(pLocal, pTarget, vEye, vTargetPos))
 		return true;
 
-	// HitChance (0=Off,1=25%,2=50%,3=75%,4=100%) controls how recently the enemy must
-	// have been seen: higher confidence = shorter time window = more conservative detonation.
-	const int iHitChance = Vars::Aimbot::Projectile::HitChance.Value;
-	if (!iHitChance)
+	// HitChance (0-100%) controls how recently the enemy must have been seen:
+	// higher confidence = shorter time window = more conservative detonation.
+	const float flHitChance = Vars::Aimbot::Projectile::HitChance.Value;
+	if (!flHitChance)
 		return false;
 
 	const int iIndex = pTarget->entindex();
 	if (!m_mLastSeen.contains(iIndex))
 		return false;
 
-	// Time windows per HitChance level (seconds): Off, 25%, 50%, 75%, 100%
+	// Map 0-100% to levels 1-4: 1-25%->5s, 26-50%->2.5s, 51-75%->1s, 76-100%->0.25s
+	// Uses integer ceiling division: (n + d - 1) / d
 	static const float flTimeWindows[] = { 0.f, 5.0f, 2.5f, 1.0f, 0.25f };
-	const float flTimeWindow = flTimeWindows[std::clamp(iHitChance, 0, static_cast<int>(std::size(flTimeWindows)) - 1)];
+	const int iLevel = std::clamp((static_cast<int>(flHitChance) + 24) / 25, 1, static_cast<int>(std::size(flTimeWindows)) - 1);
+	const float flTimeWindow = flTimeWindows[iLevel];
 	return (I::GlobalVars->curtime - m_mLastSeen.at(iIndex)) <= flTimeWindow;
 }
 
