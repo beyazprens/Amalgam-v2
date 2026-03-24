@@ -375,9 +375,6 @@ void CMisc::EngiMeleeBug(CTFPlayer* pLocal, CUserCmd* pCmd)
 	if (!Vars::Aimbot::AutoEngie::MeleeBug.Value)
 		return;
 
-	if (pLocal->m_iClass() != TF_CLASS_ENGINEER)
-		return;
-
 	auto pWeapon = H::Entities.GetWeapon();
 	if (!pWeapon || pWeapon->GetSlot() != SLOT_MELEE)
 		return;
