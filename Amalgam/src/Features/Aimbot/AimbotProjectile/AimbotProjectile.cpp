@@ -61,6 +61,8 @@ static inline std::vector<Target_t> GetTargets(CTFPlayer* pLocal, CTFWeaponBase*
 				vPos = pEntity->GetCenter();
 				vAngleTo = Math::CalcAngle(vLocalPos, vPos);
 				flFOVTo = Math::CalcFov(vLocalAngles, vAngleTo);
+				if (flFOVTo > Vars::Aimbot::General::AimFOV.Value)
+					continue;
 			}
 			else if (!F::AimbotGlobal.PlayerBoneInFOV(pEntity->As<CTFPlayer>(), vLocalPos, vLocalAngles, flFOVTo, vPos, vAngleTo))
 					continue;
@@ -2003,7 +2005,7 @@ void CAimbotProjectile::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd*
 	bool bOldAutoShoot = Vars::Aimbot::General::AutoShoot.Value;
 	if (F::AutoHeal.m_iAutoSwitch != 0)
 	{
-		Vars::Aimbot::General::AimType.Value = Vars::Aimbot::General::AimTypeEnum::Plain;
+		Vars::Aimbot::General::AimType.Value = Vars::Aimbot::General::AimTypeEnum::Silent;
 		Vars::Aimbot::General::AutoShoot.Value = true;
 	}
 	const bool bSuccess = RunMain(pLocal, pWeapon, pCmd);
