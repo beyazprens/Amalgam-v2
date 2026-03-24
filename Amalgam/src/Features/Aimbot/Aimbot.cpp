@@ -75,7 +75,24 @@ float CAimbot::GetSmoothStrength(const Vec3& vCurAngle, const Vec3& vToAngle) co
 		flVelocityScale = s_flCachedVelocityScale;
 	}
 
-	return std::clamp(flStrength * std::clamp(flCurve, 0.05f, 1.f) * flVelocityScale, 0.f, 1.f);
+	// Smooth variance: per-tick random variation so aim speed feels non-mechanical
+	float flVarianceMult = 1.f;
+	if (Vars::Aimbot::General::SmoothVariance.Value > 0.f)
+	{
+		static float s_flCachedVariance = 1.f;
+		static int s_iVarianceTick = -1;
+
+		const int iCurTick = I::GlobalVars->tickcount;
+		if (s_iVarianceTick != iCurTick)
+		{
+			s_iVarianceTick = iCurTick;
+			const float flV = Vars::Aimbot::General::SmoothVariance.Value / 100.f;
+			s_flCachedVariance = 1.f + SDK::StdRandomFloat(-flV, flV);
+		}
+		flVarianceMult = s_flCachedVariance;
+	}
+
+	return std::clamp(flStrength * std::clamp(flCurve, 0.05f, 1.f) * flVelocityScale * flVarianceMult, 0.f, 1.f);
 }
 
 void CAimbot::RunAimbot(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd, bool bSecondaryType)

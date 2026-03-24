@@ -313,6 +313,8 @@ NAMESPACE_BEGIN(Vars)
 			CVar(ShootDelayMin, "Shoot delay min", 0, SLIDER_CLAMP, 0, 300, 10, "%ims");
 			CVar(ShootDelayMax, "Shoot delay max", 0, SLIDER_CLAMP, 0, 300, 10, "%ims");
 			CVar(MissChance, "Miss chance", 0.f, SLIDER_CLAMP | SLIDER_PRECISION, 0.f, 100.f, 5.f, "%g%%");
+			CVar(AimJitter, "Aim jitter", 0.f, SLIDER_CLAMP | SLIDER_PRECISION, 0.f, 5.f, 0.1f, "%g°");
+			CVar(SmoothVariance, "Smooth variance", 0.f, SLIDER_CLAMP | SLIDER_PRECISION, 0.f, 50.f, 5.f, "%g%%");
 
 			CVarEnum(AimHoldsFire, "Aim holds fire", 2, NOSAVE | DEBUGVAR, nullptr,
 				VA_LIST("False", "Minigun only", "Always"),

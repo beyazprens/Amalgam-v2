@@ -580,8 +580,7 @@ bool CAimbotHitscan::ShouldFire(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUser
 			if (m_iDelayTargetIdx != iTargetIdx)
 			{
 				m_iDelayTargetIdx = iTargetIdx;
-				const int iActualMax = std::max(iDelayMin, iDelayMax);
-				const int iDelay = iActualMax > iDelayMin ? SDK::StdRandomInt(iDelayMin, iActualMax) : iDelayMin;
+				const int iDelay = SDK::StdRandomInt(iDelayMin, std::max(iDelayMin, iDelayMax));
 				m_flShootDelayEnd = I::GlobalVars->realtime + iDelay * 0.001f;
 			}
 			if (I::GlobalVars->realtime < m_flShootDelayEnd)
@@ -911,6 +910,15 @@ void CAimbotHitscan::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pC
 				pCmd->tick_count = TIME_TO_TICKS(tTarget.m_pRecord->m_flSimTime + F::Backtrack.GetFakeInterp());
 		}
 		DrawVisuals(pLocal, tTarget, nWeaponID);
+
+		// Aim jitter: continuous micro-wobble while tracking (only when not firing)
+		if (G::Attacking != 1 && Vars::Aimbot::General::AimJitter.Value > 0.f)
+		{
+			const float flJitter = Vars::Aimbot::General::AimJitter.Value;
+			tTarget.m_vAngleTo.x += SDK::StdRandomFloat(-flJitter, flJitter);
+			tTarget.m_vAngleTo.y += SDK::StdRandomFloat(-flJitter, flJitter);
+			Math::ClampAngles(tTarget.m_vAngleTo);
+		}
 
 		// Miss chance: randomly offset aim angle to simulate human-like missed shots
 		if (G::Attacking == 1 && Vars::Aimbot::General::MissChance.Value > 0.f)
