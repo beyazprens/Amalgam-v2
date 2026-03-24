@@ -61,6 +61,8 @@ static inline std::vector<Target_t> GetTargets(CTFPlayer* pLocal, CTFWeaponBase*
 				vPos = pEntity->GetCenter();
 				vAngleTo = Math::CalcAngle(vLocalPos, vPos);
 				flFOVTo = Math::CalcFov(vLocalAngles, vAngleTo);
+				if (flFOVTo > Vars::Aimbot::General::AimFOV.Value)
+					continue;
 			}
 			else if (!F::AimbotGlobal.PlayerBoneInFOV(pEntity->As<CTFPlayer>(), vLocalPos, vLocalAngles, flFOVTo, vPos, vAngleTo))
 					continue;
