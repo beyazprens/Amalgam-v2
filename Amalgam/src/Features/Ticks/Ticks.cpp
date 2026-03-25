@@ -14,7 +14,7 @@ MAKE_SIGNATURE(Con_NXPrintf, "engine.dll", "48 89 54 24 ? 4C 89 44 24 ? 4C 89 4C
 
 void CTicks::Reset()
 {
-	m_bSpeedhack = m_bDoubletap = m_bRecharge = m_bWarp = false;
+	m_bSpeedhack = m_bDoubletap = m_bRecharge = m_bWarp = m_bMeleeRapidFire = false;
 	m_iShiftedTicks = m_iShiftedGoal = 0;
 }
 
@@ -316,6 +316,15 @@ void CTicks::Move(float accumulated_extra_samples, bool bFinalTick)
 		m_iShiftedTicks = Vars::Speedhack::Amount.Value;
 		m_iShiftedGoal = 0;
 	}
+	else if (m_bMeleeRapidFire)
+	{
+		// Two game ticks per real tick: server processes the fire-rate
+		// countdown ~2× faster, so the next melee swing arrives in half
+		// the normal wall-clock time.  No choke/release cycle is used,
+		// so both commands are delivered inside the same real-time packet.
+		m_iShiftedTicks = 2;
+		m_iShiftedGoal = 0;
+	}
 
 	m_iShiftedGoal = std::clamp(m_iShiftedGoal, 0, m_iMaxShift);
 	if (m_iShiftedTicks > m_iShiftedGoal) // normal use/doubletap/teleport
@@ -379,6 +388,19 @@ void CTicks::MoveManage()
 		m_iMaxUsrCmdProcessTicks = std::min(m_iMaxUsrCmdProcessTicks, 8);
 	m_iMaxShift = m_iMaxUsrCmdProcessTicks - std::max(m_iMaxUsrCmdProcessTicks - Vars::Doubletap::RechargeLimit.Value, 0) - (F::AntiAim.YawOn() ? F::AntiAim.AntiAimTicks() : 0);
 	m_iMaxShift = std::max(m_iMaxShift, 1);
+
+	// Melee rapid fire: send 2 game ticks per real tick while the player
+	// holds attack with a melee weapon.  This burns down the server-side
+	// fire-rate cooldown at ~2× speed without touching client timers.
+	m_bMeleeRapidFire = false;
+	if (Vars::Misc::Exploits::MeleeRapidFire.Value && !m_bSpeedhack && !m_bDoubletap && !m_bWarp)
+	{
+		if (auto pW = H::Entities.GetWeapon())
+		{
+			if (pW->GetSlot() == SLOT_MELEE && (G::OriginalCmd.buttons & IN_ATTACK))
+				m_bMeleeRapidFire = true;
+		}
+	}
 }
 
 void CTicks::CreateMove(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd)

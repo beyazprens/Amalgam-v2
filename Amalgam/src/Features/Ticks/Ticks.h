@@ -56,6 +56,7 @@ public:
 	bool m_bRechargeQueue = false;
 	bool m_bAntiWarp = false;
 	bool m_bSpeedhack = false;
+	bool m_bMeleeRapidFire = false;
 
 	int m_iShiftedTicks = 0;
 	int m_iShiftedGoal = 0;
