@@ -369,6 +369,7 @@ bool CAimbotGlobal::ShouldAim()
 	{
 	case Vars::Aimbot::General::AimTypeEnum::Plain:
 	case Vars::Aimbot::General::AimTypeEnum::Silent:
+	case Vars::Aimbot::General::AimTypeEnum::Trolldier:
 		if (!G::CanPrimaryAttack && !G::Reloading && !F::Ticks.IsTimingUnsure())
 			return false;
 	}

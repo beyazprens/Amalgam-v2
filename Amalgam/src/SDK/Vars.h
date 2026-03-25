@@ -281,8 +281,8 @@ NAMESPACE_BEGIN(Vars)
 	NAMESPACE_BEGIN(Aimbot)
 		NAMESPACE_BEGIN(General, Aimbot)
 			CVarEnum(AimType, "Aim type", 0, NONE, nullptr,
-				VA_LIST("Off", "Plain", "Smooth", "Silent", "Locking", "Assistive", "Legit", "SmoothVelocity"),
-				Off, Plain, Smooth, Silent, Locking, Assistive, Legit, SmoothVelocity);
+				VA_LIST("Off", "Plain", "Smooth", "Silent", "Locking", "Assistive", "Legit", "SmoothVelocity", "Trolldier"),
+				Off, Plain, Smooth, Silent, Locking, Assistive, Legit, SmoothVelocity, Trolldier);
 			CVarEnum(TargetSelection, "Target selection", 0, NONE, nullptr,
 				VA_LIST("FOV", "Distance", "Hybrid"),
 				FOV, Distance, Hybrid);

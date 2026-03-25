@@ -93,7 +93,13 @@ static inline std::vector<Target_t> GetTargets(CTFPlayer* pLocal, CTFWeaponBase*
 				continue;
 
 			float flFOVTo; Vec3 vPos, vAngleTo;
-			if (!F::AimbotGlobal.PlayerBoneInFOV(pEntity->As<CTFPlayer>(), vLocalPos, vLocalAngles, flFOVTo, vPos, vAngleTo))
+			if (Vars::Aimbot::General::AimType.Value == Vars::Aimbot::General::AimTypeEnum::Trolldier)
+			{
+				vPos = pEntity->GetCenter();
+				vAngleTo = Math::CalcAngle(vLocalPos, vPos);
+				flFOVTo = Math::CalcFov(vLocalAngles, vAngleTo);
+			}
+			else if (!F::AimbotGlobal.PlayerBoneInFOV(pEntity->As<CTFPlayer>(), vLocalPos, vLocalAngles, flFOVTo, vPos, vAngleTo))
 				continue;
 
 			float flDistTo = vLocalPos.DistTo(vPos);
@@ -487,6 +493,7 @@ bool CAimbotMelee::Aim(Vec3 vCurAngle, Vec3 vToAngle, Vec3& vOut, int iMethod)
 	case Vars::Aimbot::General::AimTypeEnum::Plain:
 	case Vars::Aimbot::General::AimTypeEnum::Silent:
 	case Vars::Aimbot::General::AimTypeEnum::Locking:
+	case Vars::Aimbot::General::AimTypeEnum::Trolldier:
 		vOut = vToAngle;
 		break;
 	case Vars::Aimbot::General::AimTypeEnum::Legit:
@@ -530,6 +537,7 @@ void CAimbotMelee::Aim(CUserCmd* pCmd, Vec3& vAngle, int iMethod)
 		I::EngineClient->SetViewAngles(vAngle);
 		break;
 	case Vars::Aimbot::General::AimTypeEnum::Silent:
+	case Vars::Aimbot::General::AimTypeEnum::Trolldier:
 		if (G::Attacking == 1 || bUnsure)
 		{
 			SDK::FixMovement(pCmd, vAngle);
