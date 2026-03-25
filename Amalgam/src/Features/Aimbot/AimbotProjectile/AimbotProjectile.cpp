@@ -1561,7 +1561,7 @@ int CAimbotProjectile::CanHit(Target_t& tTarget, CTFPlayer* pLocal, CTFWeaponBas
 		if (!m_tMoveStorage.m_bFailed)
 		{
 			F::MoveSim.RunTick(m_tMoveStorage);
-			tTarget.m_vPos = m_tMoveStorage.m_vPredictedOrigin;
+			tTarget.m_vPos = m_tMoveStorage.m_MoveData.m_vecAbsOrigin;
 		}
 		if (i < 0)
 			continue;
@@ -2393,7 +2393,7 @@ bool CAimbotProjectile::CanHit(Target_t& tTarget, CTFPlayer* pLocal, CTFWeaponBa
 		if (!m_tMoveStorage.m_bFailed)
 		{
 			F::MoveSim.RunTick(m_tMoveStorage);
-			tTarget.m_vPos = m_tMoveStorage.m_vPredictedOrigin;
+			tTarget.m_vPos = m_tMoveStorage.m_MoveData.m_vecAbsOrigin;
 		}
 		if (i < 0)
 			continue;

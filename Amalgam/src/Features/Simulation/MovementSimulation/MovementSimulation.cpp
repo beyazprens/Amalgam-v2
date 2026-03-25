@@ -647,6 +647,23 @@ void CMovementSimulation::RunTick(MoveStorage& tMoveStorage, bool bPath, std::fu
 		SDK::FixMovement(&s_tDummyCmd, {}, tMoveStorage.m_MoveData.m_vecViewAngles);
 		tMoveStorage.m_MoveData.m_flForwardMove = s_tDummyCmd.forwardmove, tMoveStorage.m_MoveData.m_flSideMove = s_tDummyCmd.sidemove;
 	}
+	else if (!tMoveStorage.m_flAverageYaw && tMoveStorage.m_bDirectMove && bLastbDirectMove)
+	{	// for continued ground movement, track velocity direction each tick for accurate deceleration and drift handling
+		Vec3 vVelocity2D = tMoveStorage.m_MoveData.m_vecVelocity.To2D();
+		float flSpeed = vVelocity2D.Length();
+		if (flSpeed > tMoveStorage.m_MoveData.m_flMaxSpeed * 0.015f)
+		{
+			// cap to max speed to avoid out-of-range movement command magnitudes (e.g. after knockback)
+			if (flSpeed > tMoveStorage.m_MoveData.m_flMaxSpeed)
+				vVelocity2D = vVelocity2D.Normalized2D() * tMoveStorage.m_MoveData.m_flMaxSpeed;
+			tMoveStorage.m_MoveData.m_vecViewAngles.y = Math::VectorAngles(vVelocity2D).y;
+			s_tDummyCmd.forwardmove = vVelocity2D.x, s_tDummyCmd.sidemove = -vVelocity2D.y;
+			SDK::FixMovement(&s_tDummyCmd, {}, tMoveStorage.m_MoveData.m_vecViewAngles);
+			tMoveStorage.m_MoveData.m_flForwardMove = s_tDummyCmd.forwardmove, tMoveStorage.m_MoveData.m_flSideMove = s_tDummyCmd.sidemove;
+		}
+		else
+			tMoveStorage.m_MoveData.m_flForwardMove = tMoveStorage.m_MoveData.m_flSideMove = 0.f;
+	}
 
 	RestoreBounds(tMoveStorage.m_pPlayer);
 }
