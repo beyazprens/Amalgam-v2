@@ -47,6 +47,7 @@ void CMisc::RunPre(CTFPlayer* pLocal, CUserCmd* pCmd)
 	AutoStrafe(pLocal, pCmd);
 	AutoPeek(pLocal, pCmd);
 	BreakJump(pLocal, pCmd);
+	MeleeRapidFire(pLocal, pCmd);
 }
 
 void CMisc::RunPost(CTFPlayer* pLocal, CUserCmd* pCmd)
@@ -386,6 +387,29 @@ void CMisc::EngiMeleeBug(CTFPlayer* pLocal, CUserCmd* pCmd)
 		return;
 
 	pCmd->buttons |= IN_ATTACK;
+}
+
+void CMisc::MeleeRapidFire(CTFPlayer* pLocal, CUserCmd* pCmd)
+{
+	if (!Vars::Misc::Exploits::MeleeRapidFire.Value)
+		return;
+
+	auto pWeapon = H::Entities.GetWeapon();
+	if (!pWeapon || pWeapon->GetSlot() != SLOT_MELEE)
+		return;
+
+	if (G::CanPrimaryAttack)
+		return;
+
+	if (!(pCmd->buttons & IN_ATTACK))
+		return;
+
+	const float flCurTime = TICKS_TO_TIME(pLocal->m_nTickBase());
+	// Set one tick in the past so CanPrimaryAttack() evaluates as true this tick
+	pWeapon->m_flNextPrimaryAttack() = flCurTime - TICK_INTERVAL;
+	pLocal->m_flNextAttack() = flCurTime - TICK_INTERVAL;
+
+	G::CanPrimaryAttack = true;
 }
 
 void CMisc::AntiAFK(CTFPlayer* pLocal, CUserCmd* pCmd)

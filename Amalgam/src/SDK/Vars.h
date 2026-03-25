@@ -1175,6 +1175,7 @@ I dont think this is a good idea to disable simulations completely:
 			CVar(BackpackExpander, "Backpack expander", false);
 			CVar(PingReducer, "Ping reducer", false);
 			CVar(PingTarget, "Ping", 1, SLIDER_CLAMP, 1, 100, 1);
+			CVar(MeleeRapidFire, "Melee rapid fire", false);
 		NAMESPACE_END(Exploits)
 
 		NAMESPACE_BEGIN(Game)

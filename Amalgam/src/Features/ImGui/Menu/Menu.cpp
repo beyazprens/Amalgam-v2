@@ -1495,6 +1495,8 @@ void CMenu::MenuMisc(int iTab)
 					FToggle(Vars::Misc::Exploits::BackpackExpander, FToggleEnum::Left);
 					FToggle(Vars::Misc::Exploits::BreakShootSound, FToggleEnum::Right);
 					FTooltip("breaks weapon shoot sound by switching weapons (soldier only)");
+					FToggle(Vars::Misc::Exploits::MeleeRapidFire, FToggleEnum::Left);
+					FTooltip("resets melee attack cooldown each tick so you can swing as fast as the server allows");
 					FToggleSlider(Vars::Misc::Exploits::PingReducer, Vars::Misc::Exploits::PingTarget);
 				} EndSection();
 				if (Section("Mann vs. Machine", 8))
