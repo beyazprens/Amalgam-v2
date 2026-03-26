@@ -349,18 +349,20 @@ static std::unordered_map<uint32_t, CommandCallback> s_mCommands = {
 			return;
 		}
 
-		// Perfect wait = frames per server tick = fps_max / tickrate
-		// The Source Engine 'wait' command only accepts integers (it uses Q_atoi internally),
-		// so we round to the nearest integer to get the effective value.
-		// Example: fps_max 101 / 67 tick = 1.515 -> rounds to 2 (same as the well-known
-		// "wait 2.4" value used for 42-tick servers, which also rounds to 2).
-		const float flPerfectWait  = flFpsMax * flTickInterval;
-		const int   iEffectiveWait = static_cast<int>(std::round(flPerfectWait));
+		// Perfect wait = ceil(fps_max / tickrate)
+		// The Source Engine 'wait' command only accepts integers (it uses Q_atoi internally).
+		// We need N frames such that N * frame_time >= tick_time, i.e. N >= fps_max / tickrate.
+		// ceil() guarantees the wait is never shorter than one server tick period, which is
+		// the minimum needed to avoid sending +jump faster than the server processes ticks.
+		// Example: fps_max 101 / 67 tick = 1.508 -> ceil = 2 (matches the empirically correct
+		// "wait 2.4" value; both truncate to wait 2 in the engine).
+		const float flFramesPerTick = flFpsMax * flTickInterval;
+		const int   iEffectiveWait  = static_cast<int>(std::ceil(flFramesPerTick));
 
 		SDK::Output("cat_bhop_wait", std::format(
-			"fps_max: {:.0f} | tickrate: {:.0f} | exact: {:.4f} -> effective wait: {}\n"
+			"fps_max: {:.0f} | tickrate: {:.0f} | frames per tick: {:.4f} -> perfect wait: {}\n"
 			"  alias bhop_jump \"+jump; wait {}; -jump; wait {}; bhop_jump\"",
-			flFpsMax, flTickRate, flPerfectWait, iEffectiveWait, iEffectiveWait, iEffectiveWait
+			flFpsMax, flTickRate, flFramesPerTick, iEffectiveWait, iEffectiveWait, iEffectiveWait
 		).c_str(), { 100, 220, 255, 255 });
 	})
 };
