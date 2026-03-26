@@ -349,15 +349,18 @@ static std::unordered_map<uint32_t, CommandCallback> s_mCommands = {
 			return;
 		}
 
-		// Perfect wait = frames per server tick = fps_max * interval_per_tick
-		// This ensures the bhop alias cycles exactly once per server tick,
-		// guaranteeing the jump input lands on every ground frame.
-		const float flPerfectWait = flFpsMax * flTickInterval;
+		// Perfect wait = frames per server tick = fps_max / tickrate
+		// The Source Engine 'wait' command only accepts integers (it uses Q_atoi internally),
+		// so we round to the nearest integer to get the effective value.
+		// Example: fps_max 101 / 67 tick = 1.515 -> rounds to 2 (same as the well-known
+		// "wait 2.4" value used for 42-tick servers, which also rounds to 2).
+		const float flPerfectWait  = flFpsMax * flTickInterval;
+		const int   iEffectiveWait = static_cast<int>(std::round(flPerfectWait));
 
 		SDK::Output("cat_bhop_wait", std::format(
-			"fps_max: {:.0f} | tickrate: {:.0f} | perfect wait: {:.4f}\n"
-			"  alias bhop_jump \"+jump; wait {:.4f}; -jump; wait {:.4f}; bhop_jump\"",
-			flFpsMax, flTickRate, flPerfectWait, flPerfectWait, flPerfectWait
+			"fps_max: {:.0f} | tickrate: {:.0f} | exact: {:.4f} -> effective wait: {}\n"
+			"  alias bhop_jump \"+jump; wait {}; -jump; wait {}; bhop_jump\"",
+			flFpsMax, flTickRate, flPerfectWait, iEffectiveWait, iEffectiveWait, iEffectiveWait
 		).c_str(), { 100, 220, 255, 255 });
 	})
 };
