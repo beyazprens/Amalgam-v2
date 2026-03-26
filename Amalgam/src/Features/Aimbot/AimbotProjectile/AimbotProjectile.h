@@ -100,6 +100,7 @@ private:
 	std::vector<Vec3> m_vProjectilePath = {};
 	std::vector<DrawBox_t> m_vBoxes = {};
 	Vec3 m_vAngleTo = {};
+	Vec3 m_vRawAngleTo = {};
 	Vec3 m_vPredicted = {};
 	Vec3 m_vTarget = {};
 

@@ -608,7 +608,27 @@ void CMovementSimulation::RunTick(MoveStorage& tMoveStorage, bool bPath, std::fu
 		tMoveStorage.m_MoveData.m_vecViewAngles.y += tMoveStorage.m_flAverageYaw * flMult + flCorrection;
 	}
 	else if (!tMoveStorage.m_bDirectMove)
-		tMoveStorage.m_MoveData.m_flForwardMove = tMoveStorage.m_MoveData.m_flSideMove = 0.f;
+	{
+		// When airborne with no strafe pattern, maintain the current velocity direction as
+		// movement input rather than zeroing it.  Real players keep pressing their movement
+		// keys in the air, so this gives a more accurate prediction of straight-line and
+		// jump-while-moving trajectories (rockets, grenades, crossbow bolts all benefit).
+		const Vec3& vVel = tMoveStorage.m_MoveData.m_vecVelocity;
+		if (!vVel.To2D().IsZero())
+		{
+			// Build a world-space direction vector scaled to max speed, then use the same
+			// SDK::FixMovement(cmd, zeroAngles, viewAngles) pattern that SetupMoveData uses
+			// to rotate world-space X/Y into view-relative forwardmove/sidemove.
+			Vec3 vDir = vVel.Normalized2D() * tMoveStorage.m_MoveData.m_flMaxSpeed;
+			s_tDummyCmd.forwardmove = vDir.x;
+			s_tDummyCmd.sidemove = -vDir.y;
+			SDK::FixMovement(&s_tDummyCmd, {}, tMoveStorage.m_MoveData.m_vecViewAngles);
+			tMoveStorage.m_MoveData.m_flForwardMove = s_tDummyCmd.forwardmove;
+			tMoveStorage.m_MoveData.m_flSideMove = s_tDummyCmd.sidemove;
+		}
+		else
+			tMoveStorage.m_MoveData.m_flForwardMove = tMoveStorage.m_MoveData.m_flSideMove = 0.f;
+	}
 
 	float flOldSpeed = tMoveStorage.m_MoveData.m_flClientMaxSpeed;
 	if (tMoveStorage.m_pPlayer->m_bDucked() && tMoveStorage.m_pPlayer->IsOnGround() && !tMoveStorage.m_pPlayer->IsSwimming())

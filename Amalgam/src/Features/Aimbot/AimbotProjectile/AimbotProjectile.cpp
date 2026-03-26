@@ -55,7 +55,7 @@ static inline std::vector<Target_t> GetTargets(CTFPlayer* pLocal, CTFWeaponBase*
 					continue;
 			}
 
-			float flFOVTo; Vec3 vPos, vAngleTo;
+			float flFOVTo = 180.f; Vec3 vPos, vAngleTo;
 			if (F::AutoHeal.m_iAutoSwitch != 0 && pEntity->entindex() == F::AutoHeal.m_iTargetIdx)
 			{
 				vPos = pEntity->GetCenter();
@@ -64,8 +64,17 @@ static inline std::vector<Target_t> GetTargets(CTFPlayer* pLocal, CTFWeaponBase*
 				if (flFOVTo > Vars::Aimbot::General::AimFOV.Value)
 					continue;
 			}
-			else if (!F::AimbotGlobal.PlayerBoneInFOV(pEntity->As<CTFPlayer>(), vLocalPos, vLocalAngles, flFOVTo, vPos, vAngleTo))
+			else
+			{
+				// For projectile aimbot, compute bone position without restricting by AimFOV.
+				// The FOV check is deferred to after prediction so we can aim at players whose
+				// *predicted* intercept angle is within FOV even if they're currently outside it.
+				// flFOVTo starts at 180.f; PlayerBoneInFOV sets it to the closest-bone FOV only
+				// when hitbox data is available. If it stays 180.f, no bones were found → skip.
+				F::AimbotGlobal.PlayerBoneInFOV(pEntity->As<CTFPlayer>(), vLocalPos, vLocalAngles, flFOVTo, vPos, vAngleTo);
+				if (flFOVTo >= 180.f) // no hitbox data available — skip
 					continue;
+			}
 
 			float flDistTo = vLocalPos.DistTo(vPos);
 			int iPriority = F::AimbotGlobal.GetPriority(pEntity->entindex());
@@ -1422,6 +1431,7 @@ bool CAimbotProjectile::HandlePoint(const Vec3& vOrigin, int iSimTime, float flP
 
 	if (bReturn)
 	{
+		m_vRawAngleTo = { flPitch, flYaw, 0.f };
 		m_vAngleTo = vAngles, m_vPredicted = vOrigin, m_vTarget = vPoint;
 		if (m_bVisuals)
 		{
@@ -1561,7 +1571,7 @@ int CAimbotProjectile::CanHit(Target_t& tTarget, CTFPlayer* pLocal, CTFWeaponBas
 		if (!m_tMoveStorage.m_bFailed)
 		{
 			F::MoveSim.RunTick(m_tMoveStorage);
-			tTarget.m_vPos = m_tMoveStorage.m_vPredictedOrigin;
+			tTarget.m_vPos = m_tMoveStorage.m_MoveData.m_vecAbsOrigin;
 		}
 		if (i < 0)
 			continue;
@@ -1895,6 +1905,11 @@ bool CAimbotProjectile::RunMain(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUser
 			}
 		}
 		if (!iResult) continue;
+		// Deferred FOV check: only engage when the raw predicted aim angle is within AimFOV.
+		// This allows prediction to run for all players regardless of their current position
+		// relative to crosshair, and only aims/shoots when the intercept angle is in range.
+		if (Math::CalcFov(I::EngineClient->GetViewAngles(), m_vRawAngleTo) > Vars::Aimbot::General::AimFOV.Value)
+			continue;
 		if (iResult == 2)
 		{
 			G::AimTarget = { tTarget.m_pEntity->entindex(), I::GlobalVars->tickcount, 0 };
@@ -2393,7 +2408,7 @@ bool CAimbotProjectile::CanHit(Target_t& tTarget, CTFPlayer* pLocal, CTFWeaponBa
 		if (!m_tMoveStorage.m_bFailed)
 		{
 			F::MoveSim.RunTick(m_tMoveStorage);
-			tTarget.m_vPos = m_tMoveStorage.m_vPredictedOrigin;
+			tTarget.m_vPos = m_tMoveStorage.m_MoveData.m_vecAbsOrigin;
 		}
 		if (i < 0)
 			continue;
