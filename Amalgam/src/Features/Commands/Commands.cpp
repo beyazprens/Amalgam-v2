@@ -349,20 +349,18 @@ static std::unordered_map<uint32_t, CommandCallback> s_mCommands = {
 			return;
 		}
 
-		// Perfect wait = ceil(fps_max / tickrate)
-		// The Source Engine 'wait' command only accepts integers (it uses Q_atoi internally).
-		// We need N frames such that N * frame_time >= tick_time, i.e. N >= fps_max / tickrate.
-		// ceil() guarantees the wait is never shorter than one server tick period, which is
-		// the minimum needed to avoid sending +jump faster than the server processes ticks.
-		// Example: fps_max 101 / 67 tick = 1.508 -> ceil = 2 (matches the empirically correct
-		// "wait 2.4" value; both truncate to wait 2 in the engine).
-		const float flFramesPerTick = flFpsMax * flTickInterval;
-		const int   iEffectiveWait  = static_cast<int>(std::ceil(flFramesPerTick));
+		// Perfect wait = fps_max / tickrate (exact float)
+		// We show the full precision float (e.g. 2.4048) so users can compare against
+		// community-known values. The Source Engine 'wait' command uses Q_atoi internally,
+		// which truncates the float — so "wait 2.4048" and "wait 2.9" both become wait 2.
+		// The alias uses the same truncated integer, identical to what the engine does.
+		const float flPerfectWait  = flFpsMax / flTickRate;
+		const int   iEffectiveWait = static_cast<int>(flPerfectWait);
 
 		SDK::Output("cat_bhop_wait", std::format(
-			"fps_max: {:.0f} | tickrate: {:.0f} | frames per tick: {:.4f} -> perfect wait: {}\n"
+			"fps_max: {:.0f} | tickrate: {:.0f} | perfect wait: {:.4f} (engine uses: {})\n"
 			"  alias bhop_jump \"+jump; wait {}; -jump; wait {}; bhop_jump\"",
-			flFpsMax, flTickRate, flFramesPerTick, iEffectiveWait, iEffectiveWait, iEffectiveWait
+			flFpsMax, flTickRate, flPerfectWait, iEffectiveWait, iEffectiveWait, iEffectiveWait
 		).c_str(), { 100, 220, 255, 255 });
 	})
 };
