@@ -324,6 +324,42 @@ static std::unordered_map<uint32_t, CommandCallback> s_mCommands = {
 	{
 		F::Misc.LockItemAchievements();
 	})
+	AddCommand("cat_bhop_wait",
+	{
+		if (!I::GlobalVars)
+		{
+			SDK::Output("cat_bhop_wait", "GlobalVars unavailable", { 255, 100, 100, 255 });
+			return;
+		}
+
+		auto pFpsMax = I::CVar->FindVar("fps_max");
+		if (!pFpsMax)
+		{
+			SDK::Output("cat_bhop_wait", "Could not find fps_max cvar", { 255, 100, 100, 255 });
+			return;
+		}
+
+		const float flFpsMax        = pFpsMax->GetFloat();
+		const float flTickInterval  = I::GlobalVars->interval_per_tick;
+		const float flTickRate      = flTickInterval > 0.f ? (1.f / flTickInterval) : 0.f;
+
+		if (flFpsMax <= 0.f || flTickInterval <= 0.f)
+		{
+			SDK::Output("cat_bhop_wait", "Invalid fps_max or tick interval (connect to a server first)", { 255, 200, 100, 255 });
+			return;
+		}
+
+		// Perfect wait = frames per server tick = fps_max * interval_per_tick
+		// This ensures the bhop alias cycles exactly once per server tick,
+		// guaranteeing the jump input lands on every ground frame.
+		const float flPerfectWait = flFpsMax * flTickInterval;
+
+		SDK::Output("cat_bhop_wait", std::format(
+			"fps_max: {:.0f} | tickrate: {:.0f} | perfect wait: {:.4f}\n"
+			"  alias bhop_jump \"+jump; wait {:.4f}; -jump; wait {:.4f}; bhop_jump\"",
+			flFpsMax, flTickRate, flPerfectWait, flPerfectWait, flPerfectWait
+		).c_str(), { 100, 220, 255, 255 });
+	})
 };
 
 bool CCommands::Run(const char* sCmd, std::deque<const char*>& vArgs)
