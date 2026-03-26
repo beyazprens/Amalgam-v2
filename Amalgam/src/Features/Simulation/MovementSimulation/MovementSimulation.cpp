@@ -214,7 +214,7 @@ bool CMovementSimulation::Initialize(CBaseEntity* pEntity, MoveStorage& tMoveSto
 	bool bCalculated = bStrafe ? StrafePrediction(tMoveStorage, iStrafeSamples) : false;
 
 	// really hope this doesn't work like shit
-	if (bHitchance && bCalculated && !pPlayer->m_vecVelocity().IsZero() && Vars::Aimbot::Projectile::HitChance.Value)
+	if (bHitchance && !pPlayer->m_vecVelocity().IsZero() && Vars::Aimbot::Projectile::HitChance.Value)
 	{
 		const auto& vRecords = m_mRecords[pPlayer->entindex()];
 		const auto iSamples = vRecords.size();
@@ -244,11 +244,10 @@ bool CMovementSimulation::Initialize(CBaseEntity* pEntity, MoveStorage& tMoveSto
 			}
 		}
 
-		if (flCurrentChance < Vars::Aimbot::Projectile::HitChance.Value / 100)
+		if (flCurrentChance < Vars::Aimbot::Projectile::HitChance.Value * 0.25f)
 		{
 			if (Vars::Debug::Logging.Value)
-				SDK::Output("MovementSimulation", std::format("Hitchance ({}% < {}%)", flCurrentChance * 100, Vars::Aimbot::Projectile::HitChance.Value).c_str(), { 80, 200, 120 }, OUTPUT_CONSOLE | OUTPUT_DEBUG);
-
+				SDK::Output("MovementSimulation", std::format("Hitchance ({}% < {}%)", flCurrentChance * 100, Vars::Aimbot::Projectile::HitChance.Value * 25).c_str(), { 80, 200, 120 }, OUTPUT_CONSOLE | OUTPUT_DEBUG);
 			tMoveStorage.m_bFailed = true;
 			return false;
 		}

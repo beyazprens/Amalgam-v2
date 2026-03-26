@@ -365,9 +365,9 @@ NAMESPACE_BEGIN(Vars)
 				VA_LIST("Charge weapon", "Cancel charge", "Use arm time"),
 				ChargeWeapon = 1 << 0, CancelCharge = 1 << 1, UseArmTime = 1 << 2);
 			CVar(MaxSimulationTime, "Max simulation time", 2.f, SLIDER_MIN | SLIDER_PRECISION, 0.1f, 2.5f, 0.25f, "%gs");
-			CVar(HitChance, "Hit chance", 0.f, SLIDER_CLAMP | SLIDER_PRECISION, 0.f, 100.f, 10.f, "%g%%");
-			CVar(AutodetRadius, "Autodet radius", 90.f, SLIDER_CLAMP | SLIDER_PRECISION, 0.f, 100.f, 10.f, "%g%%");
-			CVar(SplashRadius, "Splash radius", 90.f, SLIDER_CLAMP | SLIDER_PRECISION, 0.f, 100.f, 10.f, "%g%%");
+			CVarEnum(HitChance, "Hit chance", 0, NONE, nullptr,
+				VA_LIST("Off", "25%", "50%", "75%", "100%"),
+				Off, Low, Medium, High, Max);
 			CVar(AutoRelease, "Auto release", 0.f, SLIDER_CLAMP | SLIDER_PRECISION, 0.f, 100.f, 5.f, "%g%%");
 			CVar(GrapplingHookAim, "Grappling hook aim", false);
 
