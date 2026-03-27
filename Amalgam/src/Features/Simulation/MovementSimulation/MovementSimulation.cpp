@@ -395,7 +395,7 @@ static inline bool GetYawDifference(MoveData& tRecord1, MoveData& tRecord2, bool
 	const bool iLastZero = bStaticZero;
 	const bool iCurrZero = bStaticZero = !*pYaw;
 
-	const bool bChanged = iCurrSign != iLastSign || iCurrZero != iLastZero;
+	const bool bChanged = iCurrSign != iLastSign || iCurrZero && iLastZero;
 	const bool bStraight = fabsf(*pYaw) * tRecord1.m_vVelocity.Length2D() * iTicks < flStraightFuzzyValue; // dumb way to get straight bool
 
 	if (bStart)

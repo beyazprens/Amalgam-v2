@@ -1134,8 +1134,6 @@ void CAimbotProjectile::CalculateAngle(const Vec3& vLocalPos, const Vec3& vTarge
 				vShootPos += vForward * vSolutions.front();
 				tOut.m_flPitch = flPitch - (RAD2DEG(atan2(-vShootPos.z, vShootPos.x)) - flPitch);
 			}
-			else
-				tOut.m_flPitch = flPitch;
 		}
 	}
 
