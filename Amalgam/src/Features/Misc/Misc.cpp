@@ -867,7 +867,7 @@ int CMisc::AntiBackstab(CTFPlayer* pLocal, CUserCmd* pCmd)
 		auto pWeapon = pPlayer->m_hActiveWeapon()->As<CTFWeaponBase>();
 		if (!pWeapon
 			|| pWeapon->GetWeaponID() != TF_WEAPON_KNIFE
-			&& !(SDK::GetWeaponType(pWeapon) == EWeaponType::MELEE && SDK::AttribHookValue(0, "crit_from_behind", pWeapon) > 0)
+			&& !(G::PrimaryWeaponType == EWeaponType::MELEE && SDK::AttribHookValue(0, "crit_from_behind", pWeapon) > 0)
 			&& !(pWeapon->GetWeaponID() == TF_WEAPON_FLAMETHROWER && SDK::AttribHookValue(0, "set_flamethrower_back_crit", pWeapon) == 1)
 			|| F::PlayerUtils.IsIgnored(pPlayer->entindex()))
 			continue;
@@ -912,20 +912,20 @@ int CMisc::AntiBackstab(CTFPlayer* pLocal, CUserCmd* pCmd)
 			auto TargetIsBehind = [&]()
 				{
 					const float flCompDist = PLAYER_ORIGIN_COMPRESSION / 2;
-					const float flMinDist2D = 0.0884f;
+					const float flSqCompDist = 0.0884f;
 
 					Vec3 vToTarget = (pLocal->m_vecOrigin() - pTargetPos.first).To2D();
 					const float flDist = vToTarget.Normalize();
-					if (flDist < flMinDist2D)
+					if (flDist < flSqCompDist)
 						return true;
 
 					const float flExtra = 2.f * flCompDist / flDist; // account for origin compression
 					float flPosVsTargetViewMinDot = 0.f - 0.0031f - flExtra;
 
-					Vec3 vLocalForward; Math::AngleVectors(pCmd->viewangles, &vLocalForward);
-					vLocalForward.Normalize2D();
+					Vec3 vTargetForward; Math::AngleVectors(pCmd->viewangles, &vTargetForward);
+					vTargetForward.Normalize2D();
 
-					const float flPosVsTargetViewDot = vToTarget.Dot(vLocalForward); // Behind?
+					const float flPosVsTargetViewDot = vToTarget.Dot(vTargetForward); // Behind?
 
 					return flPosVsTargetViewDot > flPosVsTargetViewMinDot;
 				};
