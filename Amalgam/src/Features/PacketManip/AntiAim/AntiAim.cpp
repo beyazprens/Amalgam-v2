@@ -435,28 +435,6 @@ float CAntiAim::GetPitch(float flCurPitch)
 		return flCurPitch;
 }
 
-void CAntiAim::MinWalk(CTFPlayer* pLocal, CUserCmd* pCmd)
-{
-	if (!Vars::AntiAim::MinWalk.Value || !YawOn() || !pLocal->m_hGroundEntity() || pLocal->InCond(TF_COND_HALLOWEEN_KART))
-		return;
-
-	if (!pCmd->forwardmove && !pCmd->sidemove && pLocal->m_vecVelocity().Length2D() < 2.f)
-	{
-		static bool bVar = true;
-		float flMove = (pLocal->IsDucking() ? 3 : 1) * ((bVar = !bVar) ? 1 : -1);
-		Vec3 vDir = { flMove, flMove, 0 };
-
-		Vec3 vMove = Math::RotatePoint(vDir, {}, { 0, -pCmd->viewangles.y, 0 });
-		pCmd->forwardmove = vMove.x * (fmodf(fabsf(pCmd->viewangles.x), 180.f) > 90.f ? -1 : 1);
-		pCmd->sidemove = -vMove.y;
-
-		pLocal->m_vecVelocity() = { 1, 1 }; // a bit stupid but it's probably fine
-	}
-}
-
-
-
-// Returns the center of the local player's head hitbox using current bones, or falls back to eye position.
 static Vec3 GetLocalHeadPos(CTFPlayer* pLocal)
 {
 	matrix3x4 aBones[MAXSTUDIOBONES];
@@ -466,13 +444,12 @@ static Vec3 GetLocalHeadPos(CTFPlayer* pLocal)
 		if (!vHead.IsZero())
 			return vHead;
 	}
-	// Fallback: eye position
 	return pLocal->m_vecOrigin() + pLocal->GetViewOffset();
 }
 
-void CAntiAim::AntiHeadshot(CTFPlayer* pLocal, CUserCmd* pCmd)
+void CAntiAim::MinWalk(CTFPlayer* pLocal, CUserCmd* pCmd)
 {
-	if (!Vars::AntiAim::AntiHeadshot.Value)
+	if (!Vars::AntiAim::MinWalk.Value)
 		return;
 
 	if (!pLocal->IsAlive() || pLocal->m_MoveType() != MOVETYPE_WALK || pLocal->IsAGhost() || pLocal->IsTaunting())
@@ -481,7 +458,7 @@ void CAntiAim::AntiHeadshot(CTFPlayer* pLocal, CUserCmd* pCmd)
 	const bool bIsHeavy = pLocal->m_iClass() == TF_CLASS_HEAVY;
 	const bool bRevving = bIsHeavy && pLocal->InCond(TF_COND_AIMING);
 
-	// 1. Local Heavy revving minigun: duck only — too slow to strafe while spinning
+	// Heavy revving minigun: duck only — too slow to strafe while spinning
 	if (bRevving)
 	{
 		pCmd->buttons |= IN_DUCK;
@@ -490,7 +467,7 @@ void CAntiAim::AntiHeadshot(CTFPlayer* pLocal, CUserCmd* pCmd)
 
 	const Vec3 vLocalHead = GetLocalHeadPos(pLocal);
 
-	// 2. Enemy scoped sniper aiming within 8° of our head → duck for ALL classes
+	// Scoped sniper with crosshair within 8° of our head → duck for all classes
 	for (auto pEntity : H::Entities.GetGroup(EntityEnum::PlayerEnemy))
 	{
 		auto pEnemy = pEntity->As<CTFPlayer>();
@@ -501,26 +478,24 @@ void CAntiAim::AntiHeadshot(CTFPlayer* pLocal, CUserCmd* pCmd)
 			continue;
 
 		const Vec3 vEnemyEyePos = pEnemy->m_vecOrigin() + pEnemy->GetViewOffset();
-		const Vec3 vEnemyEyeAng = pEnemy->GetEyeAngles();
 		const Vec3 vAngleToHead = Math::CalcAngle(vEnemyEyePos, vLocalHead);
-		if (Math::CalcFov(vEnemyEyeAng, vAngleToHead) <= 8.f)
+		if (Math::CalcFov(pEnemy->GetEyeAngles(), vAngleToHead) <= 8.f)
 		{
 			pCmd->buttons |= IN_DUCK;
 			return;
 		}
 	}
 
-	// 3. Strafe logic:
-	//    - Non-Heavy: always do small left/right strafe to make headshots harder
-	//    - Heavy (not revving): only strafe when an enemy projectile is incoming
+	// Strafe logic:
+	//   Non-Heavy: always small strafe to make headshots harder
+	//   Heavy (not revving): only strafe when an enemy projectile is heading toward us
 	static float flNextStrafeChange = 0.f;
 	static float flStrafeDir = 1.f;
 
-	bool bShouldStrafe = !bIsHeavy; // non-Heavy always strafe
+	bool bShouldStrafe = !bIsHeavy;
 
 	if (bIsHeavy)
 	{
-		// Heavy not revving: check for incoming enemy projectile
 		for (auto pEntity : H::Entities.GetGroup(EntityEnum::WorldProjectile))
 		{
 			if (pEntity->IsDormant() || pEntity->m_iTeamNum() == pLocal->m_iTeamNum())
@@ -529,7 +504,6 @@ void CAntiAim::AntiHeadshot(CTFPlayer* pLocal, CUserCmd* pCmd)
 			const Vec3 vProjPos = pEntity->m_vecOrigin();
 			Vec3 vProjVel = pEntity->GetAbsVelocity();
 
-			// Prefer networked initial velocity for rockets/arrows (more reliable)
 			const ETFClassID id = pEntity->GetClassID();
 			if (id == ETFClassID::CTFProjectile_Rocket ||
 				id == ETFClassID::CTFProjectile_SentryRocket ||
@@ -548,7 +522,6 @@ void CAntiAim::AntiHeadshot(CTFPlayer* pLocal, CUserCmd* pCmd)
 			if (vProjVel.IsZero(1.f))
 				continue;
 
-			// Projectile heading toward us? dot > cos(20°) ≈ 0.94
 			const Vec3 vProjDir = vProjVel.Normalized();
 			const Vec3 vToPlayer = (vLocalHead - vProjPos).Normalized();
 			if (vProjDir.Dot(vToPlayer) > 0.94f)
@@ -567,7 +540,26 @@ void CAntiAim::AntiHeadshot(CTFPlayer* pLocal, CUserCmd* pCmd)
 			flNextStrafeChange = flCurTime + SDK::RandomFloat(0.2f, 0.4f);
 			flStrafeDir = SDK::RandomInt(0, 1) ? 1.f : -1.f;
 		}
-		pCmd->sidemove += 130.f * flStrafeDir;
+		pCmd->sidemove = std::clamp(pCmd->sidemove + 130.f * flStrafeDir, -450.f, 450.f);
+		return;
+	}
+
+	// Original min-walk jitter: keeps velocity above zero while standing still so
+	// the desync resolver can't trivially predict our position
+	if (!YawOn() || !pLocal->m_hGroundEntity() || pLocal->InCond(TF_COND_HALLOWEEN_KART))
+		return;
+
+	if (!pCmd->forwardmove && !pCmd->sidemove && pLocal->m_vecVelocity().Length2D() < 2.f)
+	{
+		static bool bVar = true;
+		float flMove = (pLocal->IsDucking() ? 3 : 1) * ((bVar = !bVar) ? 1 : -1);
+		Vec3 vDir = { flMove, flMove, 0 };
+
+		Vec3 vMove = Math::RotatePoint(vDir, {}, { 0, -pCmd->viewangles.y, 0 });
+		pCmd->forwardmove = vMove.x * (fmodf(fabsf(pCmd->viewangles.x), 180.f) > 90.f ? -1 : 1);
+		pCmd->sidemove = -vMove.y;
+
+		pLocal->m_vecVelocity() = { 1, 1 }; // a bit stupid but it's probably fine
 	}
 }
 
@@ -585,7 +577,7 @@ void CAntiAim::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd)
 	{
 		vRealAngles = { pCmd->viewangles.x, pCmd->viewangles.y };
 		vFakeAngles = { pCmd->viewangles.x, pCmd->viewangles.y };
-		AntiHeadshot(pLocal, pCmd);
+		MinWalk(pLocal, pCmd);
 		return;
 	}
 
@@ -603,5 +595,4 @@ void CAntiAim::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd)
 	pCmd->viewangles.y = vAngles.y;
 
 	MinWalk(pLocal, pCmd);
-	AntiHeadshot(pLocal, pCmd);
 }
