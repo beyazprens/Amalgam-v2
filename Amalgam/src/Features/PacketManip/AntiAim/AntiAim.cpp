@@ -467,35 +467,62 @@ void CAntiAim::MinWalk(CTFPlayer* pLocal, CUserCmd* pCmd)
 
 	const Vec3 vLocalHead = GetLocalHeadPos(pLocal);
 
-	// Scoped sniper with crosshair within 8° of our head → duck for all classes
-	for (auto pEntity : H::Entities.GetGroup(EntityEnum::PlayerEnemy))
-	{
-		auto pEnemy = pEntity->As<CTFPlayer>();
-		if (!pEnemy || pEnemy->IsDormant() || !pEnemy->IsAlive() || pEnemy->IsAGhost())
-			continue;
-
-		if (!pEnemy->InCond(TF_COND_ZOOMED))
-			continue;
-
-		const Vec3 vEnemyEyePos = pEnemy->m_vecOrigin() + pEnemy->GetViewOffset();
-		const Vec3 vAngleToHead = Math::CalcAngle(vEnemyEyePos, vLocalHead);
-		if (Math::CalcFov(pEnemy->GetEyeAngles(), vAngleToHead) <= 8.f)
-		{
-			pCmd->buttons |= IN_DUCK;
-			return;
-		}
-	}
-
 	// Strafe logic:
 	//   Non-Heavy: always small strafe to make headshots harder
-	//   Heavy (not revving): only strafe when an enemy projectile is heading toward us
+	//   Heavy (not revving): strafe when a scoped sniper is aiming at us OR an enemy
+	//   projectile is heading toward us. Ducking as Heavy is not useful — the hitbox
+	//   is too large and movement becomes even slower.
 	static float flNextStrafeChange = 0.f;
 	static float flStrafeDir = 1.f;
 
 	bool bShouldStrafe = !bIsHeavy;
 
+	// Non-Heavy: scoped sniper aimed at head → duck (smaller target, harder headshot)
+	if (!bIsHeavy)
+	{
+		for (auto pEntity : H::Entities.GetGroup(EntityEnum::PlayerEnemy))
+		{
+			auto pEnemy = pEntity->As<CTFPlayer>();
+			if (!pEnemy || pEnemy->IsDormant() || !pEnemy->IsAlive() || pEnemy->IsAGhost())
+				continue;
+
+			if (!pEnemy->InCond(TF_COND_ZOOMED))
+				continue;
+
+			const Vec3 vEnemyEyePos = pEnemy->m_vecOrigin() + pEnemy->GetViewOffset();
+			const Vec3 vAngleToHead = Math::CalcAngle(vEnemyEyePos, vLocalHead);
+			if (Math::CalcFov(pEnemy->GetEyeAngles(), vAngleToHead) <= 8.f)
+			{
+				pCmd->buttons |= IN_DUCK;
+				return;
+			}
+		}
+	}
+
 	if (bIsHeavy)
 	{
+		// Heavy: scoped sniper aimed at head → strafe instead of duck
+		for (auto pEntity : H::Entities.GetGroup(EntityEnum::PlayerEnemy))
+		{
+			auto pEnemy = pEntity->As<CTFPlayer>();
+			if (!pEnemy || pEnemy->IsDormant() || !pEnemy->IsAlive() || pEnemy->IsAGhost())
+				continue;
+
+			if (!pEnemy->InCond(TF_COND_ZOOMED))
+				continue;
+
+			const Vec3 vEnemyEyePos = pEnemy->m_vecOrigin() + pEnemy->GetViewOffset();
+			const Vec3 vAngleToHead = Math::CalcAngle(vEnemyEyePos, vLocalHead);
+			if (Math::CalcFov(pEnemy->GetEyeAngles(), vAngleToHead) <= 8.f)
+			{
+				bShouldStrafe = true;
+				break;
+			}
+		}
+
+		// Heavy: incoming enemy projectile → strafe
+		if (!bShouldStrafe)
+		{
 		for (auto pEntity : H::Entities.GetGroup(EntityEnum::WorldProjectile))
 		{
 			if (pEntity->IsDormant() || pEntity->m_iTeamNum() == pLocal->m_iTeamNum())
@@ -529,6 +556,7 @@ void CAntiAim::MinWalk(CTFPlayer* pLocal, CUserCmd* pCmd)
 				bShouldStrafe = true;
 				break;
 			}
+		}
 		}
 	}
 
