@@ -478,8 +478,11 @@ void CAntiAim::AntiHeadshot(CTFPlayer* pLocal, CUserCmd* pCmd)
 	if (!pLocal->IsAlive() || pLocal->m_MoveType() != MOVETYPE_WALK || pLocal->IsAGhost() || pLocal->IsTaunting())
 		return;
 
-	// 1. Local Heavy revving minigun: duck to lower our own head hitbox
-	if (pLocal->m_iClass() == TF_CLASS_HEAVY && pLocal->InCond(TF_COND_AIMING))
+	const bool bIsHeavy = pLocal->m_iClass() == TF_CLASS_HEAVY;
+	const bool bRevving = bIsHeavy && pLocal->InCond(TF_COND_AIMING);
+
+	// 1. Local Heavy revving minigun: duck only — too slow to strafe while spinning
+	if (bRevving)
 	{
 		pCmd->buttons |= IN_DUCK;
 		return;
@@ -487,79 +490,76 @@ void CAntiAim::AntiHeadshot(CTFPlayer* pLocal, CUserCmd* pCmd)
 
 	const Vec3 vLocalHead = GetLocalHeadPos(pLocal);
 
-	// 2. Check for enemies about to headshot us:
-	//    - Scoped sniper (TF_COND_ZOOMED) whose aim is within 8° of our head, OR
-	//    - Heavy revving minigun (TF_COND_AIMING) facing toward us within 15°
+	// 2. Enemy scoped sniper aiming within 8° of our head → duck for ALL classes
 	for (auto pEntity : H::Entities.GetGroup(EntityEnum::PlayerEnemy))
 	{
 		auto pEnemy = pEntity->As<CTFPlayer>();
 		if (!pEnemy || pEnemy->IsDormant() || !pEnemy->IsAlive() || pEnemy->IsAGhost())
 			continue;
 
-		const bool bScoped = pEnemy->InCond(TF_COND_ZOOMED);
-		const bool bRevving = pEnemy->m_iClass() == TF_CLASS_HEAVY && pEnemy->InCond(TF_COND_AIMING);
-		if (!bScoped && !bRevving)
+		if (!pEnemy->InCond(TF_COND_ZOOMED))
 			continue;
 
 		const Vec3 vEnemyEyePos = pEnemy->m_vecOrigin() + pEnemy->GetViewOffset();
 		const Vec3 vEnemyEyeAng = pEnemy->GetEyeAngles();
-
-		// Angle from enemy's eye to our head
 		const Vec3 vAngleToHead = Math::CalcAngle(vEnemyEyePos, vLocalHead);
-		const float flFOV = Math::CalcFov(vEnemyEyeAng, vAngleToHead);
-
-		const float flThreshold = bScoped ? 8.f : 15.f;
-		if (flFOV <= flThreshold)
+		if (Math::CalcFov(vEnemyEyeAng, vAngleToHead) <= 8.f)
 		{
 			pCmd->buttons |= IN_DUCK;
 			return;
 		}
 	}
 
-	// 3. Incoming projectile from an enemy: do a small left/right strafe to dodge
+	// 3. Strafe logic:
+	//    - Non-Heavy: always do small left/right strafe to make headshots harder
+	//    - Heavy (not revving): only strafe when an enemy projectile is incoming
 	static float flNextStrafeChange = 0.f;
 	static float flStrafeDir = 1.f;
 
-	bool bProjectileIncoming = false;
-	for (auto pEntity : H::Entities.GetGroup(EntityEnum::WorldProjectile))
+	bool bShouldStrafe = !bIsHeavy; // non-Heavy always strafe
+
+	if (bIsHeavy)
 	{
-		if (pEntity->IsDormant() || pEntity->m_iTeamNum() == pLocal->m_iTeamNum())
-			continue;
-
-		const Vec3 vProjPos = pEntity->m_vecOrigin();
-		Vec3 vProjVel = pEntity->GetAbsVelocity();
-
-		// For rockets use the networked initial velocity which is more reliable
-		const ETFClassID id = pEntity->GetClassID();
-		if (id == ETFClassID::CTFProjectile_Rocket ||
-			id == ETFClassID::CTFProjectile_SentryRocket ||
-			id == ETFClassID::CTFProjectile_EnergyBall ||
-			id == ETFClassID::CTFProjectile_Flare ||
-			id == ETFClassID::CTFProjectile_Arrow ||
-			id == ETFClassID::CTFProjectile_HealingBolt)
+		// Heavy not revving: check for incoming enemy projectile
+		for (auto pEntity : H::Entities.GetGroup(EntityEnum::WorldProjectile))
 		{
-			vProjVel = pEntity->As<CTFBaseRocket>()->m_vInitialVelocity();
-		}
-		else if (id == ETFClassID::CTFGrenadePipebombProjectile)
-		{
-			vProjVel = pEntity->As<CTFGrenadePipebombProjectile>()->m_vInitialVelocity();
-		}
+			if (pEntity->IsDormant() || pEntity->m_iTeamNum() == pLocal->m_iTeamNum())
+				continue;
 
-		if (vProjVel.IsZero(1.f))
-			continue;
+			const Vec3 vProjPos = pEntity->m_vecOrigin();
+			Vec3 vProjVel = pEntity->GetAbsVelocity();
 
-		// Check if the projectile is heading toward local player
-		// dot( normalize(vProjVel), normalize(vLocalHead - vProjPos) ) > cos(20°) ≈ 0.94
-		const Vec3 vToPlayer = (vLocalHead - vProjPos).Normalized();
-		const Vec3 vProjDir = vProjVel.Normalized();
-		if (vProjDir.Dot(vToPlayer) > 0.94f)
-		{
-			bProjectileIncoming = true;
-			break;
+			// Prefer networked initial velocity for rockets/arrows (more reliable)
+			const ETFClassID id = pEntity->GetClassID();
+			if (id == ETFClassID::CTFProjectile_Rocket ||
+				id == ETFClassID::CTFProjectile_SentryRocket ||
+				id == ETFClassID::CTFProjectile_EnergyBall ||
+				id == ETFClassID::CTFProjectile_Flare ||
+				id == ETFClassID::CTFProjectile_Arrow ||
+				id == ETFClassID::CTFProjectile_HealingBolt)
+			{
+				vProjVel = pEntity->As<CTFBaseRocket>()->m_vInitialVelocity();
+			}
+			else if (id == ETFClassID::CTFGrenadePipebombProjectile)
+			{
+				vProjVel = pEntity->As<CTFGrenadePipebombProjectile>()->m_vInitialVelocity();
+			}
+
+			if (vProjVel.IsZero(1.f))
+				continue;
+
+			// Projectile heading toward us? dot > cos(20°) ≈ 0.94
+			const Vec3 vProjDir = vProjVel.Normalized();
+			const Vec3 vToPlayer = (vLocalHead - vProjPos).Normalized();
+			if (vProjDir.Dot(vToPlayer) > 0.94f)
+			{
+				bShouldStrafe = true;
+				break;
+			}
 		}
 	}
 
-	if (bProjectileIncoming)
+	if (bShouldStrafe)
 	{
 		const float flCurTime = I::GlobalVars->curtime;
 		if (flCurTime >= flNextStrafeChange)
