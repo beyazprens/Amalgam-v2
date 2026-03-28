@@ -37,8 +37,13 @@ static inline std::vector<Target_t> GetTargets(CTFPlayer* pLocal, CTFWeaponBase*
 			{
 				if (bHeal)
 				{
+					auto pMedigun = pWeapon->As<CWeaponMedigun>();
+					bool bIsCurrentTarget = pMedigun->m_hHealingTarget().Get() == pEntity;
+					// During an active uber, exclude all non-current targets — no target switching
+					if (!bIsCurrentTarget && pMedigun->m_bChargeRelease())
+						continue;
 					if (pEntity->As<CTFPlayer>()->InCond(TF_COND_STEALTHED)
-						|| pEntity->As<CTFPlayer>()->m_iHealth() >= pEntity->As<CTFPlayer>()->GetMaxHealth()
+						|| (!bIsCurrentTarget && pEntity->As<CTFPlayer>()->m_iHealth() >= pEntity->As<CTFPlayer>()->GetMaxHealth())
 						|| pEntity->As<CTFPlayer>()->IsInvulnerable()
 						|| Vars::Aimbot::Healing::HealPriority.Value == Vars::Aimbot::Healing::HealPriorityEnum::FriendsOnly
 						&& !H::Entities.IsFriend(pEntity->entindex()) && !H::Entities.InParty(pEntity->entindex()))
@@ -59,21 +64,17 @@ static inline std::vector<Target_t> GetTargets(CTFPlayer* pLocal, CTFWeaponBase*
 			int iPriority = F::AimbotGlobal.GetPriority(pEntity->entindex());
 			if (bTeam && bHeal)
 			{
+				auto pMedigun = pWeapon->As<CWeaponMedigun>();
+				auto pTFPlayer = pEntity->As<CTFPlayer>();
+				bool bIsCurrentTarget = pMedigun->m_hHealingTarget().Get() == pEntity;
+				bool bLowHealth = pTFPlayer->m_iHealth() < pTFPlayer->GetMaxHealth();
 				iPriority = 0;
-				if (pWeapon->As<CWeaponMedigun>()->m_hHealingTarget().Get() == pEntity)
-					iPriority = std::numeric_limits<int>::max();
+				if (bIsCurrentTarget)
+					// Sticky: keep INT_MAX while current target has low health or uber is active; yield to INT_MAX-1 low-health targets when current is full
+					iPriority = (bLowHealth || pMedigun->m_bChargeRelease()) ? std::numeric_limits<int>::max() : std::numeric_limits<int>::max() - 2;
 				else
-				{
-					switch (Vars::Aimbot::Healing::HealPriority.Value)
-					{
-					case Vars::Aimbot::Healing::HealPriorityEnum::PrioritizeFriends:
-						if (H::Entities.IsFriend(pEntity->entindex()) || H::Entities.InParty(pEntity->entindex()))
-							iPriority = std::numeric_limits<int>::max() - 1;
-						break;
-					case Vars::Aimbot::Healing::HealPriorityEnum::PrioritizeTeam:
-						iPriority = std::numeric_limits<int>::max() - 1;
-					}
-				}
+					// Non-current low-health target: always INT_MAX-1 so we switch to them when current target is at full health
+					iPriority = std::numeric_limits<int>::max() - 1;
 			}
 			vTargets.emplace_back(pEntity, TargetEnum::Player, vPos, vAngleTo, flFOVTo, flDistTo, iPriority);
 		}
@@ -829,6 +830,10 @@ void CAimbotHitscan::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pC
 	if (vTargets.empty())
 	{
 		m_iDelayTargetIdx = -1;
+		// Medigun: keep pressing attack even when nobody is in FOV so the heal beam doesn't drop
+		if (nWeaponID == TF_WEAPON_MEDIGUN && pWeapon->As<CWeaponMedigun>()->m_hHealingTarget().Get()
+			&& (Vars::Aimbot::General::AutoShoot.Value || G::LastUserCmd->buttons & IN_ATTACK))
+			pCmd->buttons |= IN_ATTACK;
 		return;
 	}
 
@@ -860,6 +865,14 @@ void CAimbotHitscan::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pC
 	for (auto& tTarget : vTargets)
 	{
 		if (nWeaponID == TF_WEAPON_MEDIGUN && pWeapon->As<CWeaponMedigun>()->m_hHealingTarget().Get() == tTarget.m_pEntity)
+		{
+			if (Vars::Aimbot::General::AutoShoot.Value || G::LastUserCmd->buttons & IN_ATTACK)
+				pCmd->buttons |= IN_ATTACK;
+			return;
+		}
+
+		// Non-current medigun target (low health, in FOV): press attack to allow beam switching, never rotate
+		if (nWeaponID == TF_WEAPON_MEDIGUN)
 		{
 			if (Vars::Aimbot::General::AutoShoot.Value || G::LastUserCmd->buttons & IN_ATTACK)
 				pCmd->buttons |= IN_ATTACK;
