@@ -38,6 +38,8 @@ static inline std::vector<Target_t> GetTargets(CTFPlayer* pLocal, CTFWeaponBase*
 				if (bHeal)
 				{
 					if (pEntity->As<CTFPlayer>()->InCond(TF_COND_STEALTHED)
+						|| pEntity->As<CTFPlayer>()->m_iHealth() >= pEntity->As<CTFPlayer>()->GetMaxHealth()
+						|| pEntity->As<CTFPlayer>()->IsInvulnerable()
 						|| Vars::Aimbot::Healing::HealPriority.Value == Vars::Aimbot::Healing::HealPriorityEnum::FriendsOnly
 						&& !H::Entities.IsFriend(pEntity->entindex()) && !H::Entities.InParty(pEntity->entindex()))
 						continue;
@@ -58,14 +60,19 @@ static inline std::vector<Target_t> GetTargets(CTFPlayer* pLocal, CTFWeaponBase*
 			if (bTeam && bHeal)
 			{
 				iPriority = 0;
-				switch (Vars::Aimbot::Healing::HealPriority.Value)
-				{
-				case Vars::Aimbot::Healing::HealPriorityEnum::PrioritizeFriends:
-					if (H::Entities.IsFriend(pEntity->entindex()) || H::Entities.InParty(pEntity->entindex()))
-						iPriority = std::numeric_limits<int>::max();
-					break;
-				case Vars::Aimbot::Healing::HealPriorityEnum::PrioritizeTeam:
+				if (pWeapon->As<CWeaponMedigun>()->m_hHealingTarget().Get() == pEntity)
 					iPriority = std::numeric_limits<int>::max();
+				else
+				{
+					switch (Vars::Aimbot::Healing::HealPriority.Value)
+					{
+					case Vars::Aimbot::Healing::HealPriorityEnum::PrioritizeFriends:
+						if (H::Entities.IsFriend(pEntity->entindex()) || H::Entities.InParty(pEntity->entindex()))
+							iPriority = std::numeric_limits<int>::max() - 1;
+						break;
+					case Vars::Aimbot::Healing::HealPriorityEnum::PrioritizeTeam:
+						iPriority = std::numeric_limits<int>::max() - 1;
+					}
 				}
 			}
 			vTargets.emplace_back(pEntity, TargetEnum::Player, vPos, vAngleTo, flFOVTo, flDistTo, iPriority);
@@ -854,7 +861,7 @@ void CAimbotHitscan::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pC
 	{
 		if (nWeaponID == TF_WEAPON_MEDIGUN && pWeapon->As<CWeaponMedigun>()->m_hHealingTarget().Get() == tTarget.m_pEntity)
 		{
-			if (G::LastUserCmd->buttons & IN_ATTACK)
+			if (Vars::Aimbot::General::AutoShoot.Value || G::LastUserCmd->buttons & IN_ATTACK)
 				pCmd->buttons |= IN_ATTACK;
 			return;
 		}
@@ -877,8 +884,7 @@ void CAimbotHitscan::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pC
 			switch (nWeaponID)
 			{
 			case TF_WEAPON_MEDIGUN:
-				if (!(G::LastUserCmd->buttons & IN_ATTACK))
-					pCmd->buttons |= IN_ATTACK;
+				pCmd->buttons |= IN_ATTACK;
 				break;
 			case TF_WEAPON_SNIPERRIFLE_CLASSIC:
 				if (pWeapon->As<CTFSniperRifle>()->m_flChargedDamage() && pLocal->m_hGroundEntity())
