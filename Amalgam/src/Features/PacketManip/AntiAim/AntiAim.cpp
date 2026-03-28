@@ -456,6 +456,20 @@ void CAntiAim::MinWalk(CTFPlayer* pLocal, CUserCmd* pCmd)
 
 
 
+// Returns the center of the local player's head hitbox using current bones, or falls back to eye position.
+static Vec3 GetLocalHeadPos(CTFPlayer* pLocal)
+{
+	matrix3x4 aBones[MAXSTUDIOBONES];
+	if (pLocal->SetupBones(aBones, MAXSTUDIOBONES, BONE_USED_BY_ANYTHING, pLocal->m_flSimulationTime()))
+	{
+		Vec3 vHead = pLocal->GetHitboxCenter(aBones, HITBOX_HEAD);
+		if (!vHead.IsZero())
+			return vHead;
+	}
+	// Fallback: eye position
+	return pLocal->m_vecOrigin() + pLocal->GetViewOffset();
+}
+
 void CAntiAim::AntiHeadshot(CTFPlayer* pLocal, CUserCmd* pCmd)
 {
 	if (!Vars::AntiAim::AntiHeadshot.Value)
@@ -464,32 +478,97 @@ void CAntiAim::AntiHeadshot(CTFPlayer* pLocal, CUserCmd* pCmd)
 	if (!pLocal->IsAlive() || pLocal->m_MoveType() != MOVETYPE_WALK || pLocal->IsAGhost() || pLocal->IsTaunting())
 		return;
 
-	// Heavy revving minigun: duck to lower the head hitbox
+	// 1. Local Heavy revving minigun: duck to lower our own head hitbox
 	if (pLocal->m_iClass() == TF_CLASS_HEAVY && pLocal->InCond(TF_COND_AIMING))
 	{
 		pCmd->buttons |= IN_DUCK;
 		return;
 	}
 
-	// All other classes: randomly strafe to evade headshots
-	static float flNextDirectionChange = 0.f;
-	static float flSideMove = 0.f;
-	static float flForwardMove = 0.f;
+	const Vec3 vLocalHead = GetLocalHeadPos(pLocal);
 
-	const float flCurTime = I::GlobalVars->curtime;
-	if (flCurTime >= flNextDirectionChange)
+	// 2. Check for enemies about to headshot us:
+	//    - Scoped sniper (TF_COND_ZOOMED) whose aim is within 8° of our head, OR
+	//    - Heavy revving minigun (TF_COND_AIMING) facing toward us within 15°
+	for (auto pEntity : H::Entities.GetGroup(EntityEnum::PlayerEnemy))
 	{
-		flNextDirectionChange = flCurTime + SDK::RandomFloat(0.15f, 0.35f);
-		flSideMove = SDK::RandomInt(0, 1) ? 450.f : -450.f;
-		flForwardMove = SDK::RandomInt(0, 1) ? 450.f : -450.f;
+		auto pEnemy = pEntity->As<CTFPlayer>();
+		if (!pEnemy || pEnemy->IsDormant() || !pEnemy->IsAlive() || pEnemy->IsAGhost())
+			continue;
+
+		const bool bScoped = pEnemy->InCond(TF_COND_ZOOMED);
+		const bool bRevving = pEnemy->m_iClass() == TF_CLASS_HEAVY && pEnemy->InCond(TF_COND_AIMING);
+		if (!bScoped && !bRevving)
+			continue;
+
+		const Vec3 vEnemyEyePos = pEnemy->m_vecOrigin() + pEnemy->GetViewOffset();
+		const Vec3 vEnemyEyeAng = pEnemy->GetEyeAngles();
+
+		// Angle from enemy's eye to our head
+		const Vec3 vAngleToHead = Math::CalcAngle(vEnemyEyePos, vLocalHead);
+		const float flFOV = Math::CalcFov(vEnemyEyeAng, vAngleToHead);
+
+		const float flThreshold = bScoped ? 8.f : 15.f;
+		if (flFOV <= flThreshold)
+		{
+			pCmd->buttons |= IN_DUCK;
+			return;
+		}
 	}
 
-	// Apply movement in view-space: rotate the strafe direction by the player's view angle
-	Vec3 vDir = { flForwardMove, flSideMove, 0.f };
-	Vec3 vMove = Math::RotatePoint(vDir, {}, { 0, -pCmd->viewangles.y, 0 });
-	const float flPitchMul = fmodf(fabsf(pCmd->viewangles.x), 180.f) > 90.f ? -1.f : 1.f;
-	pCmd->forwardmove = vMove.x * flPitchMul;
-	pCmd->sidemove = -vMove.y;
+	// 3. Incoming projectile from an enemy: do a small left/right strafe to dodge
+	static float flNextStrafeChange = 0.f;
+	static float flStrafeDir = 1.f;
+
+	bool bProjectileIncoming = false;
+	for (auto pEntity : H::Entities.GetGroup(EntityEnum::WorldProjectile))
+	{
+		if (pEntity->IsDormant() || pEntity->m_iTeamNum() == pLocal->m_iTeamNum())
+			continue;
+
+		const Vec3 vProjPos = pEntity->m_vecOrigin();
+		Vec3 vProjVel = pEntity->GetAbsVelocity();
+
+		// For rockets use the networked initial velocity which is more reliable
+		const ETFClassID id = pEntity->GetClassID();
+		if (id == ETFClassID::CTFProjectile_Rocket ||
+			id == ETFClassID::CTFProjectile_SentryRocket ||
+			id == ETFClassID::CTFProjectile_EnergyBall ||
+			id == ETFClassID::CTFProjectile_Flare ||
+			id == ETFClassID::CTFProjectile_Arrow ||
+			id == ETFClassID::CTFProjectile_HealingBolt)
+		{
+			vProjVel = pEntity->As<CTFBaseRocket>()->m_vInitialVelocity();
+		}
+		else if (id == ETFClassID::CTFGrenadePipebombProjectile)
+		{
+			vProjVel = pEntity->As<CTFGrenadePipebombProjectile>()->m_vInitialVelocity();
+		}
+
+		if (vProjVel.IsZero(1.f))
+			continue;
+
+		// Check if the projectile is heading toward local player
+		// dot( normalize(vProjVel), normalize(vLocalHead - vProjPos) ) > cos(20°) ≈ 0.94
+		const Vec3 vToPlayer = (vLocalHead - vProjPos).Normalized();
+		const Vec3 vProjDir = vProjVel.Normalized();
+		if (vProjDir.Dot(vToPlayer) > 0.94f)
+		{
+			bProjectileIncoming = true;
+			break;
+		}
+	}
+
+	if (bProjectileIncoming)
+	{
+		const float flCurTime = I::GlobalVars->curtime;
+		if (flCurTime >= flNextStrafeChange)
+		{
+			flNextStrafeChange = flCurTime + SDK::RandomFloat(0.2f, 0.4f);
+			flStrafeDir = SDK::RandomInt(0, 1) ? 1.f : -1.f;
+		}
+		pCmd->sidemove += 130.f * flStrafeDir;
+	}
 }
 
 
