@@ -43,7 +43,7 @@ void CAutoHeal::AutoHeal(CTFPlayer* pLocal, CWeaponMedigun* pWeapon, CUserCmd* p
 						|| ShouldPopAtHealth(pTarget, flHealthScale, m_iResistType);
 				}
 
-				if (!pLocal->IsInvulnerable() && !bShouldActivate
+				if (!pLocal->IsInvulnerable() && !pWeapon->m_bChargeRelease() && !bShouldActivate
 					&& (pWeapon->m_flChargeLevel() < flMinCharge || pTarget->IsInvulnerable()
 					|| pTarget->InCond(TF_COND_BULLET_IMMUNE) || pTarget->InCond(TF_COND_MEDIGUN_UBER_BULLET_RESIST)
 					|| pTarget->InCond(TF_COND_BLAST_IMMUNE) || pTarget->InCond(TF_COND_MEDIGUN_UBER_BLAST_RESIST)
