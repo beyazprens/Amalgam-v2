@@ -11,6 +11,7 @@ private:
 	float GetYaw(CTFPlayer* pLocal, CUserCmd* pCmd, bool bFake);
 	float GetPitch(float flCurPitch);
 	void MinWalk(CTFPlayer* pLocal, CUserCmd* pCmd);
+	void AntiHeadshot(CTFPlayer* pLocal, CUserCmd* pCmd);
 
 public:
 	bool AntiAimOn();

@@ -552,6 +552,7 @@ NAMESPACE_BEGIN(Vars)
 		CVar(AntiOverlap, "Anti-overlap", false);
 		CVar(InvalidShootPitch, "Hide pitch on shot", false);
 		CVar(TauntSpin, "Taunt Spin", false);
+		CVar(AntiHeadshot, "Anti-headshot", false);
 	NAMESPACE_END(AntiAim)
 
 	NAMESPACE_BEGIN(Resolver)

@@ -1367,6 +1367,7 @@ void CMenu::MenuHvH(int iTab)
 					FToggle(Vars::AntiAim::MinWalk, FToggleEnum::Left);
 					FToggle(Vars::AntiAim::AntiOverlap, FToggleEnum::Left);
 					FToggle(Vars::AntiAim::InvalidShootPitch, FToggleEnum::Right);
+					FToggle(Vars::AntiAim::AntiHeadshot, FToggleEnum::Left);
 				} EndSection();
 			}
 			/* Column 2 */

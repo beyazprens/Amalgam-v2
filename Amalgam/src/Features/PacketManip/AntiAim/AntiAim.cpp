@@ -456,6 +456,44 @@ void CAntiAim::MinWalk(CTFPlayer* pLocal, CUserCmd* pCmd)
 
 
 
+void CAntiAim::AntiHeadshot(CTFPlayer* pLocal, CUserCmd* pCmd)
+{
+	if (!Vars::AntiAim::AntiHeadshot.Value)
+		return;
+
+	if (!pLocal->IsAlive() || pLocal->m_MoveType() != MOVETYPE_WALK || pLocal->IsAGhost() || pLocal->IsTaunting())
+		return;
+
+	// Heavy revving minigun: duck to lower the head hitbox
+	if (pLocal->m_iClass() == TF_CLASS_HEAVY && pLocal->InCond(TF_COND_AIMING))
+	{
+		pCmd->buttons |= IN_DUCK;
+		return;
+	}
+
+	// All other classes: randomly strafe to evade headshots
+	static float flNextDirectionChange = 0.f;
+	static float flSideMove = 0.f;
+	static float flForwardMove = 0.f;
+
+	const float flCurTime = I::GlobalVars->curtime;
+	if (flCurTime >= flNextDirectionChange)
+	{
+		flNextDirectionChange = flCurTime + SDK::RandomFloat(0.15f, 0.35f);
+		flSideMove = SDK::RandomInt(0, 1) ? 450.f : -450.f;
+		flForwardMove = SDK::RandomInt(0, 1) ? 450.f : -450.f;
+	}
+
+	// Apply movement in view-space: rotate the strafe direction by the player's view angle
+	Vec3 vDir = { flForwardMove, flSideMove, 0.f };
+	Vec3 vMove = Math::RotatePoint(vDir, {}, { 0, -pCmd->viewangles.y, 0 });
+	const float flPitchMul = fmodf(fabsf(pCmd->viewangles.x), 180.f) > 90.f ? -1.f : 1.f;
+	pCmd->forwardmove = vMove.x * flPitchMul;
+	pCmd->sidemove = -vMove.y;
+}
+
+
+
 void CAntiAim::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd)
 {
 	G::AntiAim = AntiAimOn() && ShouldRun(pLocal, pWeapon, pCmd);
@@ -468,6 +506,7 @@ void CAntiAim::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd)
 	{
 		vRealAngles = { pCmd->viewangles.x, pCmd->viewangles.y };
 		vFakeAngles = { pCmd->viewangles.x, pCmd->viewangles.y };
+		AntiHeadshot(pLocal, pCmd);
 		return;
 	}
 
@@ -485,4 +524,5 @@ void CAntiAim::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd)
 	pCmd->viewangles.y = vAngles.y;
 
 	MinWalk(pLocal, pCmd);
+	AntiHeadshot(pLocal, pCmd);
 }
