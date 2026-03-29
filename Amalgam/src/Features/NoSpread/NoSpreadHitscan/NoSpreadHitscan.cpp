@@ -86,7 +86,8 @@ bool CNoSpreadHitscan::ParsePlayerPerf(const std::string& sMsg)
 	if (!Vars::Aimbot::General::NoSpread.Value)
 		return false;
 
-	std::smatch tMatch; std::regex_match(sMsg, tMatch, std::regex(R"((\d+.\d+)\s\d+\s\d+\s\d+.\d+\s\d+.\d+\svel\s\d+.\d+)"));
+	static const std::regex tRegex(R"((\d+\.\d+)\s\d+\s\d+\s\d+\.\d+\s\d+\.\d+\svel\s\d+\.\d+)");
+	std::smatch tMatch; std::regex_match(sMsg, tMatch, tRegex);
 
 	if (tMatch.size() == 2)
 	{
@@ -124,7 +125,8 @@ bool CNoSpreadHitscan::ParsePlayerPerf(const std::string& sMsg)
 		return true;
 	}
 
-	return std::regex_match(sMsg, std::regex(R"(\d+.\d+\s\d+\s\d+)"));
+	static const std::regex tPartialRegex(R"(\d+\.\d+\s\d+\s\d+)");
+	return std::regex_match(sMsg, tPartialRegex);
 }
 
 void CNoSpreadHitscan::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd)
@@ -146,13 +148,11 @@ void CNoSpreadHitscan::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* 
 	int iBulletsPerShot = pWeapon->GetBulletsPerShot();
 	float flFireRate = std::ceilf(pWeapon->GetFireRate() / TICK_INTERVAL) * TICK_INTERVAL;
 
-	CValve_Random* Random = new CValve_Random();
-
 	std::vector<std::pair<int,Vec3>> vBulletCorrections = {};
 	Vec3 vAverageSpread = {};
 	for (int iBullet = 0; iBullet < iBulletsPerShot; iBullet++)
 	{
-		Random->SetSeed(m_iSeed + iBullet);// SDK::RandomSeed(m_iSeed + iBullet);
+		m_Random.SetSeed(m_iSeed + iBullet);
 
 		if (!iBullet) // check if we'll get a guaranteed perfect shot
 		{
@@ -166,8 +166,8 @@ void CNoSpreadHitscan::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* 
 			}
 		}
 
-		const float x = Random->RandomFloat(-0.5f, 0.5f) + Random->RandomFloat(-0.5f, 0.5f);//SDK::RandomFloat(-0.5f, 0.5f) + SDK::RandomFloat(-0.5f, 0.5f);
-		const float y = Random->RandomFloat(-0.5f, 0.5f) + Random->RandomFloat(-0.5f, 0.5f);//SDK::RandomFloat(-0.5f, 0.5f) + SDK::RandomFloat(-0.5f, 0.5f);
+		const float x = m_Random.RandomFloat(-0.5f, 0.5f) + m_Random.RandomFloat(-0.5f, 0.5f);
+		const float y = m_Random.RandomFloat(-0.5f, 0.5f) + m_Random.RandomFloat(-0.5f, 0.5f);
 
 		Vec3 vForward, vRight, vUp; Math::AngleVectors(pCmd->viewangles, &vForward, &vRight, &vUp);
 		Vec3 vFixedSpread = vForward + (vRight * x * flSpread) + (vUp * y * flSpread);
@@ -176,7 +176,6 @@ void CNoSpreadHitscan::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* 
 
 		vBulletCorrections.push_back( { iBullet, vFixedSpread } );
 	}
-	delete(Random);
 	vAverageSpread /= static_cast<float>(iBulletsPerShot);
 
 	const auto cFixedSpread = std::ranges::min_element(vBulletCorrections,

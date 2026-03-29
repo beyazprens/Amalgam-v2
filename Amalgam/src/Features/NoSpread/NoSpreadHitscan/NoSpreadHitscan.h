@@ -11,11 +11,12 @@ private:
 	std::string GetFormat(int iServerTime);
 
 	bool m_bWaitingForPlayerPerf = false;
-	int m_bSynced = 0;
+	bool m_bSynced = false;
 	double m_dRequestTime = 0.0;
 	float m_flServerTime = 0.f;
 	double m_dTimeDelta = 0.0;
 	std::deque<double> m_vTimeDeltas = {};
+	CValve_Random m_Random;
 
 public:
 	void Reset();
