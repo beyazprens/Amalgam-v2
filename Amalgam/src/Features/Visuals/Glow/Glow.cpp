@@ -56,7 +56,7 @@ void CGlow::SecondEnd(Glow_t tGlow, IMatRenderContext* pRenderContext, int w, in
 {
 	pRenderContext->PopRenderTargetAndViewport();
 
-	if (tGlow.Blur)
+	if (tGlow.Blur && m_pBloomAmount)
 	{
 		m_pBloomAmount->SetFloatValue(tGlow.Blur);
 

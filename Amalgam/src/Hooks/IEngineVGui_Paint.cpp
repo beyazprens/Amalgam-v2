@@ -40,6 +40,8 @@ MAKE_HOOK(IEngineVGui_Paint, U::Memory.GetVirtual(I::EngineVGui, 14), void,
 	F::Chams.m_bRendering = false;
 	F::Glow.m_bRendering = false;
 	I::ModelRender->ForcedMaterialOverride(nullptr);
+	I::RenderView->SetColorModulation(1.f, 1.f, 1.f);
+	I::RenderView->SetBlend(1.f);
 	if (auto pRenderContext = I::MaterialSystem->GetRenderContext())
 	{
 		pRenderContext->SetStencilEnable(false);
@@ -54,10 +56,15 @@ MAKE_HOOK(IEngineVGui_Paint, U::Memory.GetVirtual(I::EngineVGui, 14), void,
 	{
 		H::Draw.UpdateScreenSize();
 		H::Draw.UpdateW2SMatrix();
+
+		// CameraWindow uses DrawScreenSpaceRectangle (a 3D render-context call) which
+		// must NOT be called inside StartDrawing()/FinishDrawing() (2D VGUI mode).
+		// Draw it here, before entering 2D mode, to avoid corrupting shader state.
+		F::CameraWindow.Draw();
+
 		H::Draw.Start(true);
 		if (auto pLocal = H::Entities.GetLocal())
 		{
-			F::CameraWindow.Draw();
 			F::Visuals.DrawAntiAim(pLocal);
 
 			F::Visuals.DrawPickupTimers();
