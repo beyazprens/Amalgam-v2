@@ -95,15 +95,16 @@ static inline std::vector<Target_t> GetTargets(CTFPlayer* pLocal, CTFWeaponBase*
 				continue;
 
 			float flFOVTo; Vec3 vPos, vAngleTo;
-			if (!F::AimbotGlobal.PlayerBoneInFOV(pEntity->As<CTFPlayer>(), vLocalPos, vLocalAngles, flFOVTo, vPos, vAngleTo))
+			if (bAutoBackstabKnife)
 			{
-				if (!bAutoBackstabKnife)
-					continue;
-				// For auto backstab with knife: include target even outside FOV, aim at entity center
+				// For auto backstab with knife: bypass FOV check entirely so the backstab hitbox
+				// (which is at the back of the target) is never excluded by AimFOV
 				vPos = pEntity->GetCenter();
 				vAngleTo = Math::CalcAngle(vLocalPos, vPos);
 				flFOVTo = Math::CalcFov(vLocalAngles, vAngleTo);
 			}
+			else if (!F::AimbotGlobal.PlayerBoneInFOV(pEntity->As<CTFPlayer>(), vLocalPos, vLocalAngles, flFOVTo, vPos, vAngleTo))
+				continue;
 
 			float flDistTo = vLocalPos.DistTo(vPos);
 			bool bTeam = pEntity->m_iTeamNum() == pLocal->m_iTeamNum();
