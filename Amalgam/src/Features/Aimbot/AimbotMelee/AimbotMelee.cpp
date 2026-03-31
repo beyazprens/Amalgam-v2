@@ -87,6 +87,8 @@ static inline std::vector<Target_t> GetTargets(CTFPlayer* pLocal, CTFWeaponBase*
 			!F::AimbotGlobal.FriendlyFire() && SDK::AttribHookValue(0, "speed_buff_ally", pWeapon) > 0)
 			eGroupType = EntityEnum::PlayerAll;
 
+		const bool bAutoBackstabKnife = Vars::Aimbot::Melee::AutoBackstab.Value && pWeapon->GetWeaponID() == TF_WEAPON_KNIFE;
+
 		for (auto pEntity : H::Entities.GetGroup(eGroupType))
 		{
 			if (F::AimbotGlobal.ShouldIgnore(pEntity, pLocal, pWeapon))
@@ -94,7 +96,14 @@ static inline std::vector<Target_t> GetTargets(CTFPlayer* pLocal, CTFWeaponBase*
 
 			float flFOVTo; Vec3 vPos, vAngleTo;
 			if (!F::AimbotGlobal.PlayerBoneInFOV(pEntity->As<CTFPlayer>(), vLocalPos, vLocalAngles, flFOVTo, vPos, vAngleTo))
-				continue;
+			{
+				if (!bAutoBackstabKnife)
+					continue;
+				// For auto backstab with knife: include target even outside FOV, aim at entity center
+				vPos = pEntity->GetCenter();
+				vAngleTo = Math::CalcAngle(vLocalPos, vPos);
+				flFOVTo = Math::CalcFov(vLocalAngles, vAngleTo);
+			}
 
 			float flDistTo = vLocalPos.DistTo(vPos);
 			bool bTeam = pEntity->m_iTeamNum() == pLocal->m_iTeamNum();
@@ -252,7 +261,7 @@ void CAimbotMelee::UpdateInfo(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCm
 			for (auto& [iIndex, tMoveStorage] : mMoveStorage)
 				m_mPaths[iIndex] = tMoveStorage.m_vPath;
 
-			const bool bAlwaysDraw = !Vars::Aimbot::General::AutoShoot.Value || Vars::Debug::Info.Value;
+			const bool bAlwaysDraw = !(Vars::Aimbot::General::AutoShoot.Value || (Vars::Aimbot::Melee::AutoBackstab.Value && pWeapon->GetWeaponID() == TF_WEAPON_KNIFE)) || Vars::Debug::Info.Value;
 			if (bAlwaysDraw)
 			{
 				G::LineStorage.clear();
@@ -368,6 +377,8 @@ int CAimbotMelee::CanHit(Target_t& tTarget, CTFPlayer* pLocal, CTFWeaponBase* pW
 	if (Vars::Aimbot::General::Ignore.Value & Vars::Aimbot::General::IgnoreEnum::Unsimulated && H::Entities.GetChoke(tTarget.m_pEntity->entindex()) > Vars::Aimbot::General::TickTolerance.Value)
 		return false;
 
+	const bool bAutoBackstabKnife = Vars::Aimbot::Melee::AutoBackstab.Value && pWeapon->GetWeaponID() == TF_WEAPON_KNIFE;
+
 	float flRange = SDK::AttribHookValue(m_flRange, "melee_range_multiplier", pWeapon);
 	float flHull = SDK::AttribHookValue(18, "melee_bounds_multiplier", pWeapon);
 	if (pLocal->m_flModelScale() > 1.0f)
@@ -391,7 +402,17 @@ int CAimbotMelee::CanHit(Target_t& tTarget, CTFPlayer* pLocal, CTFWeaponBase* pW
 		{
 			for (auto& tRecord : vSimRecords)
 				vRecords.push_back(&tRecord);
-			vRecords = F::Backtrack.GetValidRecords(vRecords, pLocal, true, -TICKS_TO_TIME(vSimRecords.size()));
+
+			if (bAutoBackstabKnife)
+			{
+				// For knife auto backstab: use all records sorted by distance to find best backstab opportunity,
+				// ignoring the backtrack window restriction so no valid position is missed
+				std::sort(vRecords.begin(), vRecords.end(), [&](const TickRecord* a, const TickRecord* b) {
+					return pLocal->m_vecOrigin().DistTo(a->m_vOrigin) < pLocal->m_vecOrigin().DistTo(b->m_vOrigin);
+				});
+			}
+			else
+				vRecords = F::Backtrack.GetValidRecords(vRecords, pLocal, true, -TICKS_TO_TIME(vSimRecords.size()));
 		}
 		if (vRecords.empty())
 			return false;
@@ -433,7 +454,7 @@ int CAimbotMelee::CanHit(Target_t& tTarget, CTFPlayer* pLocal, CTFWeaponBase* pW
 			bReturn = trace.m_pEnt && trace.m_pEnt == tTarget.m_pEntity;
 		}
 
-		if (bReturn && Vars::Aimbot::Melee::AutoBackstab.Value && pWeapon->GetWeaponID() == TF_WEAPON_KNIFE)
+		if (bReturn && bAutoBackstabKnife)
 			bReturn = CanBackstab(tTarget.m_pEntity, pLocal, tTarget.m_vAngleTo);
 
 		tTarget.m_pEntity->SetAbsOrigin(vRestoreOrigin);
@@ -660,7 +681,7 @@ void CAimbotMelee::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* pCmd
 		G::AimTarget = { tTarget.m_pEntity->entindex(), I::GlobalVars->tickcount };
 		G::AimPoint = { tTarget.m_vPos, I::GlobalVars->tickcount };
 
-		if (Vars::Aimbot::General::AutoShoot.Value && pWeapon->m_flSmackTime() < 0.f)
+		if ((Vars::Aimbot::General::AutoShoot.Value || (Vars::Aimbot::Melee::AutoBackstab.Value && pWeapon->GetWeaponID() == TF_WEAPON_KNIFE)) && pWeapon->m_flSmackTime() < 0.f)
 		{
 			if (m_bShouldSwing)
 				pCmd->buttons |= IN_ATTACK;
