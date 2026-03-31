@@ -1,6 +1,7 @@
 #include "NoSpreadHitscan.h"
 
 #include "../../Ticks/Ticks.h"
+#include <memory>
 #include <regex>
 #include <numeric>
 
@@ -146,7 +147,7 @@ void CNoSpreadHitscan::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* 
 	int iBulletsPerShot = pWeapon->GetBulletsPerShot();
 	float flFireRate = std::ceilf(pWeapon->GetFireRate() / TICK_INTERVAL) * TICK_INTERVAL;
 
-	CValve_Random* Random = new CValve_Random();
+	auto Random = std::make_unique<CValve_Random>();
 
 	std::vector<std::pair<int,Vec3>> vBulletCorrections = {};
 	Vec3 vAverageSpread = {};
@@ -176,7 +177,6 @@ void CNoSpreadHitscan::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* 
 
 		vBulletCorrections.push_back( { iBullet, vFixedSpread } );
 	}
-	delete(Random);
 	vAverageSpread /= static_cast<float>(iBulletsPerShot);
 
 	const auto cFixedSpread = std::ranges::min_element(vBulletCorrections,

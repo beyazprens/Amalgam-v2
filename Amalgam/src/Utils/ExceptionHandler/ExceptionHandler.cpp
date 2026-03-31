@@ -9,6 +9,7 @@
 #include <sstream>
 #include <fstream>
 #include <format>
+#include <unordered_set>
 #pragma comment(lib, "imagehlp.lib")
 
 #define STATUS_RUNTIME_ERROR ((DWORD)0xE06D7363)
@@ -27,10 +28,11 @@ struct Frame_t
 
 static PVOID s_pHandle;
 static LPVOID s_lpParam;
-static std::unordered_map<LPVOID, bool> s_mAddresses = {};
+static std::unordered_set<LPVOID> s_mAddresses = {};
 static int s_iExceptions = 0;
 static std::once_flag s_symInitFlag;
 static bool s_bSymReady = false;
+static std::mutex s_mtxHandler;
 
 static inline std::deque<Frame_t> StackTrace(PCONTEXT pContext)
 {
@@ -95,7 +97,7 @@ static inline std::deque<Frame_t> StackTrace(PCONTEXT pContext)
 			uintptr_t dwOffset = 0;
 			char buf[sizeof(IMAGEHLP_SYMBOL64) + 255];
 			auto symbol = PIMAGEHLP_SYMBOL64(buf);
-			symbol->SizeOfStruct = sizeof(IMAGEHLP_SYMBOL64) + 255;
+			symbol->SizeOfStruct = sizeof(IMAGEHLP_SYMBOL64);
 			symbol->MaxNameLength = 254;
 			if (SymGetSymFromAddr64(hProcess, tStackFrame.AddrPC.Offset, &dwOffset, symbol))
 				tFrame.m_sName = symbol->Name;
@@ -120,14 +122,22 @@ static LONG APIENTRY ExceptionFilter(PEXCEPTION_POINTERS ExceptionInfo)
 	case STATUS_HEAP_CORRUPTION: sError = "HEAP CORRUPTION"; break;
 	case STATUS_RUNTIME_ERROR: sError = "RUNTIME ERROR"; break;
 	case MS_VC_EXCEPTION:
-	case DBG_PRINTEXCEPTION_C: return EXCEPTION_EXECUTE_HANDLER;
+	case DBG_PRINTEXCEPTION_C: return EXCEPTION_CONTINUE_SEARCH;
+	default: return EXCEPTION_CONTINUE_SEARCH;
 	}
+
+	// Use try_lock to avoid deadlock if an exception is raised from within the
+	// handler (re-entrancy) or from a second thread.  If the lock cannot be
+	// acquired immediately, silently pass the exception to the next handler.
+	std::unique_lock<std::mutex> lock(s_mtxHandler, std::try_to_lock);
+	if (!lock.owns_lock())
+		return EXCEPTION_CONTINUE_SEARCH;
 
 	if (s_mAddresses.contains(ExceptionInfo->ExceptionRecord->ExceptionAddress)
 		|| !Vars::Debug::CrashLogging.Value
 		|| s_iExceptions && GetAsyncKeyState(VK_SHIFT) & 0x8000 && GetAsyncKeyState(VK_RETURN) & 0x8000)
-		return EXCEPTION_EXECUTE_HANDLER;
-	s_mAddresses[ExceptionInfo->ExceptionRecord->ExceptionAddress];
+		return EXCEPTION_CONTINUE_SEARCH;
+	s_mAddresses.insert(ExceptionInfo->ExceptionRecord->ExceptionAddress);
 
 	std::stringstream ssErrorStream;
 	ssErrorStream << std::format("Error: {} (0x{:X}) ({})\n", sError, ExceptionInfo->ExceptionRecord->ExceptionCode, ++s_iExceptions);
@@ -198,7 +208,7 @@ static LONG APIENTRY ExceptionFilter(PEXCEPTION_POINTERS ExceptionInfo)
 	}
 #endif
 
-	return EXCEPTION_EXECUTE_HANDLER;
+	return EXCEPTION_CONTINUE_SEARCH;
 }
 
 void CExceptionHandler::Initialize(LPVOID lpParam)

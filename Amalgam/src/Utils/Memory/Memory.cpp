@@ -128,6 +128,11 @@ uintptr_t CMemory::FindSignatureAtAddress(uintptr_t uAddress, const char* szPatt
 		const auto iPatternSize = vPattern.size();
 		const int* iPatternBytes = vPattern.data();
 
+		// Guard against underflow: if the remaining region is smaller than the
+		// pattern there can be no match, so bail out early.
+		if (iPatternSize == 0 || dwImageSize <= iPatternSize)
+			return 0x0;
+
 		const auto pImageBytes = reinterpret_cast<byte*>(uAddress);
 		// Now loop through all bytes and check if the byte sequence matches
 
