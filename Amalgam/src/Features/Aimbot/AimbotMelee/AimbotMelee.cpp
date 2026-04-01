@@ -403,6 +403,9 @@ int CAimbotMelee::CanHit(Target_t& tTarget, CTFPlayer* pLocal, CTFWeaponBase* pW
 			return false;
 
 		vRecords = { &F::Backtrack.m_tRecord };
+		// Include simulated future-position records for approach prediction when no backtrack history exists
+		for (auto& tRecord : vSimRecords)
+			vRecords.push_back(&tRecord);
 	}
 
 	CGameTrace trace = {};

@@ -446,7 +446,7 @@ NAMESPACE_BEGIN(Vars)
 		NAMESPACE_BEGIN(Melee)
 			CVar(AutoBackstab, "Auto backstab", true);
 			CVar(IgnoreRazorback, "Ignore razorback", true);
-			CVar(SwingPrediction, "Swing prediction", false);
+			CVar(SwingPrediction, "Swing prediction", true);
 			CVar(WhipTeam, "Whip team", false);
 
 			CVar(SwingOffset, "Swing offset", -1, NOSAVE | DEBUGVAR, -1, 1);
