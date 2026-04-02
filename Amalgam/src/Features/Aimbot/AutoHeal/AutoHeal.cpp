@@ -662,7 +662,21 @@ void CAutoHeal::AutoVaccinator(CTFPlayer* pLocal, CWeaponMedigun* pWeapon, CUser
 
 	int iTargetResist = vResistDangers.front().second;
 	float flTargetDanger = vResistDangers.front().first;
-	if (flTargetDanger)
+
+	// Don't swap while a resist uber is currently active or a previous swap hasn't completed yet
+	bool bUberActive = false;
+	for (auto* pT : vTargets)
+	{
+		if (pT->InCond(TF_COND_MEDIGUN_UBER_BULLET_RESIST)
+			|| pT->InCond(TF_COND_MEDIGUN_UBER_BLAST_RESIST)
+			|| pT->InCond(TF_COND_MEDIGUN_UBER_FIRE_RESIST))
+		{
+			bUberActive = true;
+			break;
+		}
+	}
+	bool bSwapInProgress = m_flSwapTime > I::GlobalVars->curtime;
+	if (flTargetDanger && !bUberActive && !bSwapInProgress)
 		SwapResistType(pCmd, iTargetResist);
 	if (flTargetDanger >= 1.f)
 		ActivateResistType(pCmd, iTargetResist);
