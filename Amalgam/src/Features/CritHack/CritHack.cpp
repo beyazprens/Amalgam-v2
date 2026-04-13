@@ -306,7 +306,10 @@ int CCritHack::GetCritRequest(CUserCmd* pCmd, CTFWeaponBase* pWeapon)
 	{
 		auto pEntity = I::ClientEntityList->GetClientEntity(G::AimTarget.m_iEntIndex)->As<CBaseEntity>();
 		if (pEntity && pEntity->IsPlayer())
+		{
 			bPressed = true;
+			bCanCrit = true;
+		}
 	}
 
 	bool bSkip = Vars::CritHack::AvoidRandomCrits.Value;
